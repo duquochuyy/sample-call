@@ -16,10 +16,10 @@ MainWindow::MainWindow(QWidget *parent)
     QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     lastLoadedFrame = documentsPath + "/current_frame.jpg";
 
-    connect(cameraHandler, &CameraHandler::newFrameCaptured, this, &MainWindow::onNewFrameCaptured);
-
     connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onBtnStartCameraClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onBtnStopCameraClicked);
+
+    connect(cameraHandler, &CameraHandler::newFrameCaptured, this, &MainWindow::onNewFrameCaptured);
 }
 
 MainWindow::~MainWindow()
@@ -27,21 +27,11 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::loadAndDisplayImage()
+void MainWindow::onNewFrameCaptured(const QImage &frame)
 {
-    if (QFile::exists(lastLoadedFrame)) {
-        QImage image(lastLoadedFrame);
-        if (!image.isNull()) {
-            ui->videoFrameLabel->setPixmap(QPixmap::fromImage(image).scaled(
-                ui->videoFrameLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-            qDebug() << "Image loaded and displayed from" << lastLoadedFrame;
-        }
-    }
-}
-
-void MainWindow::onNewFrameCaptured()
-{
-    loadAndDisplayImage();
+    qDebug() << frame.format();
+        ui->videoFrameLabel->setPixmap(QPixmap::fromImage(frame).scaled(
+            ui->videoFrameLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void MainWindow::onBtnStartCameraClicked()

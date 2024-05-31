@@ -6,6 +6,9 @@
 #include <QCameraImageCapture>
 #include <QTimer>
 #include <QString>
+#include <QVideoProbe>
+#include <QCameraViewfinder>
+#include <QCameraViewfinderSettings>
 
 class CameraHandler : public QObject
 {
@@ -16,20 +19,19 @@ public:
     void startCamera();
     void stopCamera();
 
-    QString getLastCapturedFrame() const;
-
 signals:
-    void newFrameCaptured();
+    void newFrameCaptured(const QImage &frame);
 
 private slots:
     void captureFrame();
-    void onImageCaptured(int id, const QImage &preview);
+    void onImageCaptured(int id, const QVideoFrame &preview);
 
 private:
     QCamera *camera;
     QCameraImageCapture *imageCapture;
     QTimer *captureTimer;
-    QString lastCapturedFrame;
+    QCameraViewfinder *viewfinder;
+    QCameraViewfinderSettings viewfinderSettings;
 };
 
 #endif // CAMERAHANDLER_H

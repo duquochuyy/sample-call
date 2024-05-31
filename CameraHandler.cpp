@@ -9,20 +9,37 @@ CameraHandler::CameraHandler(QObject *parent)
     : QObject(parent),
       camera(new QCamera(QCameraInfo::defaultCamera())),
       imageCapture(new QCameraImageCapture(camera, this)),
-      captureTimer(new QTimer(this))
+      captureTimer(new QTimer(this)),
+      viewfinder(new QCameraViewfinder())
 {
-    connect(imageCapture, &QCameraImageCapture::imageCaptured, this, &CameraHandler::onImageCaptured);
     connect(captureTimer, &QTimer::timeout, this, &CameraHandler::captureFrame);
+//    connect(imageCapture, &QCameraImageCapture::imageCaptured, this, &CameraHandler::onImageCaptured);
+    connect(imageCapture, &QCameraImageCapture::imageAvailable, this, &CameraHandler::onImageCaptured);
 
-    QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    lastCapturedFrame = documentsPath + "/current_frame.jpg";
+    // setting view finder
+//    viewfinder->show();
+//    camera->setViewfinder(viewfinder);
+    viewfinderSettings.setPixelFormat(QVideoFrame::Format_YUV420P);
+//    viewfinderSettings.setResolution(640, 480);
+    camera->setViewfinderSettings(viewfinderSettings);
+
+    // set format
+    camera->setCaptureMode(QCamera::CaptureStillImage);
+    imageCapture->setCaptureDestination(QCameraImageCapture::CaptureToBuffer);
+    QList<QVideoFrame::PixelFormat> supportedFormats = imageCapture->supportedBufferFormats();
+    if (supportedFormats.contains(QVideoFrame::Format_YUV420P)) {
+        imageCapture->setBufferFormat(QVideoFrame::Format_YUV420P);
+        qDebug() << "Buffer format set to YUV420P";
+    } else {
+        qDebug() << "YUV420P format not supported, supported formats are:" << supportedFormats;
+    }
+    imageCapture->setBufferFormat(QVideoFrame::Format_YUV420P);
+
+    qDebug() << imageCapture->bufferFormat();
 }
 
 void CameraHandler::startCamera()
 {
-    camera->setCaptureMode(QCamera::CaptureStillImage);
-    imageCapture->setCaptureDestination(QCameraImageCapture::CaptureToFile);
-
     camera->start();
     captureTimer->start(1000 / 30); // Capture 30 frames per second
     qDebug() << "Camera started";
@@ -37,23 +54,12 @@ void CameraHandler::stopCamera()
 
 void CameraHandler::captureFrame()
 {
-    imageCapture->capture(lastCapturedFrame);
-    emit newFrameCaptured();
+    imageCapture->capture();
 }
 
-void CameraHandler::onImageCaptured(int id, const QImage &preview)
+void CameraHandler::onImageCaptured(int id, const QVideoFrame &preview)
 {
-    // hàm này tạm thời ko thể sử dụng
-    qDebug() << "capture image: " << id;
-    if (preview.save(lastCapturedFrame)) {
-        emit newFrameCaptured();
-        qDebug() << "Image captured and saved to" << lastCapturedFrame;
-    } else {
-        qDebug() << "Failed to save image to" << lastCapturedFrame;
-    }
+    qDebug() << "Frame format:" << preview.pixelFormat();
+    emit newFrameCaptured(preview.image());
 }
 
-QString CameraHandler::getLastCapturedFrame() const
-{
-    return lastCapturedFrame;
-}

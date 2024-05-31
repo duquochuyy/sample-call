@@ -20,8 +20,7 @@ public:
 
 private slots:
     // handle show video from frame
-    void loadAndDisplayImage();
-    void onNewFrameCaptured();
+    void onNewFrameCaptured(const QImage &frame);
 
     // handle button
     void onBtnStartCameraClicked();
