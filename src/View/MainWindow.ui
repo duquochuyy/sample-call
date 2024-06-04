@@ -40,13 +40,13 @@
      <string>Stop Camera</string>
     </property>
    </widget>
-   <widget class="QLabel" name="videoFrameLabel">
+   <widget class="QLabel" name="videoFrameLabelLocal">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>90</y>
-      <width>531</width>
-      <height>301</height>
+      <x>450</x>
+      <y>320</y>
+      <width>161</width>
+      <height>81</height>
      </rect>
     </property>
     <property name="text">

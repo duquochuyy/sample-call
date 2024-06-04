@@ -95,7 +95,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    std::shared_ptr<CallController> _callController;
+    std::shared_ptr<CallController> _callController = std::make_shared<CallController>();
     MainWindow w(_callController);
     w.show();
     return a.exec();

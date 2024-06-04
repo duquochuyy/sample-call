@@ -4,14 +4,14 @@
 MainWindow::MainWindow(std::shared_ptr<CallController> callController, QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      _callController(new CallController())
+      _callController(callController)
 {
     ui->setupUi(this);
 
     connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onBtnStartCameraClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onBtnStopCameraClicked);
 
-    _callController->setVideoFrameLabel(ui->videoFrameLabel);
+    _callController->setVideoFrameLabel(ui->videoFrameLabelLocal);
 
 }
 
