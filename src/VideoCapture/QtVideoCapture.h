@@ -23,7 +23,7 @@ public:
 private slots:
      void onCameraStateChanged(QCamera::State state);
      void onCameraError(QCamera::Error error);
-     void onFrameCaptured(const uchar * yuv420pData, int width, int );
+     void onFrameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp);
 
 private:
      QCamera *camera;

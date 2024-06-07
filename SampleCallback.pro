@@ -15,7 +15,11 @@ SOURCES += \
     src/VideoCapture/VideoCapture.cpp \
     src/VideoCapture/QtVideoSurface.cpp \
     src/VideoRender/QtVideoRender.cpp \
+    src/VideoRender/PartnerVideoRender.cpp \
     src/VideoRender/VideoRender.cpp \
+    src/Network/NetworkReceiver.cpp \
+    src/Network/NetworkSender.cpp \
+    src/utils/utils.cpp \
     src/MainWindow.cpp
 
 HEADERS += \
@@ -24,7 +28,11 @@ HEADERS += \
     src/VideoCapture/VideoCapture.h \
     src/VideoCapture/QtVideoSurface.h \
     src/VideoRender/QtVideoRender.h \
+    src/VideoRender/PartnerVideoRender.h \
     src/VideoRender/VideoRender.h \
+    src/Network/NetworkReceiver.h \
+    src/Network/NetworkSender.h \
+    src/utils/utils.h \
     src/MainWindow.h
 
 FORMS += \

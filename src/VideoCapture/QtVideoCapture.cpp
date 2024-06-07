@@ -18,16 +18,17 @@ QtVideoCapture::~QtVideoCapture()
     delete videoSurface;
 }
 
-void QtVideoCapture::setSetting(int width, int height) {
+void QtVideoCapture::setSetting(int width, int height)
+{
     QCameraViewfinderSettings viewfinderSettings;
     viewfinderSettings.setResolution(width, height);
     camera->setViewfinderSettings(viewfinderSettings);
-
 }
 
 void QtVideoCapture::start()
 {
     qDebug() << "QtVideoCapture::start";
+    setSetting(1280, 720);
     camera->start();
 }
 
@@ -36,10 +37,11 @@ void QtVideoCapture::stop()
     camera->stop();
 }
 
-void QtVideoCapture::onFrameCaptured(const uchar * yuv420pData, int width, int height) {
-     ZVideoFrame newFrame(yuv420pData, width, height);
-     if (_callback != nullptr)
-         _callback->onNewVideoFrame(newFrame);
+void QtVideoCapture::onFrameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp)
+{
+    ZVideoFrame newFrame(yuv420pData, width, height, timestamp);
+    if (_callback != nullptr)
+        _callback->onNewVideoFrame(newFrame);
 }
 
 void QtVideoCapture::onCameraStateChanged(QCamera::State state)

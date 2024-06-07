@@ -1,20 +1,20 @@
-#include "./QtVideoRender.h"
+#include "./PartnerVideoRender.h"
 
-QtVideoRender::QtVideoRender()
+PartnerVideoRender::PartnerVideoRender()
 {
 }
 
-QtVideoRender::~QtVideoRender()
+PartnerVideoRender::~PartnerVideoRender()
 {
     delete _label;
 }
 
-void QtVideoRender::setVideoFrameLabel(QLabel *label)
+void PartnerVideoRender::setVideoFrameLabel(QLabel *label)
 {
     _label = label;
 }
 
-QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int height)
+QImage PartnerVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int height)
 {
     int frameSize = width * height;
     const uchar *yPlane = yuv240Data;
@@ -40,15 +40,26 @@ QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    rgbImage.save("abc.jpg");
+    if (!rgbImage.save("partner.jpg"))
+    {
+        qDebug() << "Failed to save image to";
+    }
+    else
+    {
+        qDebug() << "Image saved to";
+    }
+
     return rgbImage;
 }
 
-void QtVideoRender::render(const ZVideoFrame &frame)
+void PartnerVideoRender::render(const ZVideoFrame &frame)
 {
-    QImage frameConverted = convertYUV420ToRGB(frame.yuv420pData, frame.width, frame.height);
+    ZVideoFrame localFrame = frame;
+    QImage frameConverted = convertYUV420ToRGB(localFrame.yuv420pData, localFrame.width, localFrame.height);
+    qDebug() << "converted";
     if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        qDebug() << "rendered";
     }
 }

@@ -1,5 +1,8 @@
 #include "MainWindow.h"
 #include <memory>
+#include <mutex>
+#include <fstream>
+#include <iostream>
 
 #include <QApplication>
 
@@ -91,11 +94,34 @@
 //     std::shared_ptr<VideoRender> _remoteRender;
 // };
 
+std::mutex fileMutex;
+
+int getPortNumber(int basePort) {
+    std::lock_guard<std::mutex> guard(fileMutex);
+    const char* filename = "/tmp/app_instance_count.txt";
+    std::ifstream infile(filename);
+    int count = 0;
+
+    if (infile.is_open()) {
+        infile >> count;
+        infile.close();
+    }
+
+    count++;
+    std::ofstream outfile(filename);
+    if (outfile.is_open()) {
+        outfile << count;
+        outfile.close();
+    }
+
+    return basePort + count;
+}
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    std::shared_ptr<CallController> _callController = std::make_shared<CallController>();
+    int port = getPortNumber(8080);
+    std::shared_ptr<CallController> _callController = std::make_shared<CallController>(port);
     MainWindow w(_callController);
     w.show();
     return a.exec();

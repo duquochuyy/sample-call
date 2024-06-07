@@ -2,30 +2,56 @@
 #define VIDEOCAPTURE_H
 
 #include <algorithm>
-
+#include <stdio.h>
+#include <cstring>
+#include "./../utils/utils.h"
 
 typedef unsigned char uchar;
 struct ZVideoFrame
 {
-    const uchar *yuv420pData;
+    uchar *yuv420pData;
     int width;
     int height;
+    uint64_t timestamp;
 
-    ZVideoFrame() : yuv420pData(nullptr) {}
+    // Constructor mặc định
+    ZVideoFrame() : yuv420pData(nullptr), width(0), height(0), timestamp(0) {}
 
-    ZVideoFrame(const uchar *data, int width, int height) : yuv420pData(data), width(width), height(height) {}
+    // Constructor với tham số
+    ZVideoFrame(const uchar *data, int width, int height, uint64_t timestamp = 0)
+        : width(width), height(height), timestamp(timestamp)
+    {
+        int dataSize = width * height * 3 / 2;
+        yuv420pData = new uchar[dataSize];
+        std::memcpy(yuv420pData, data, dataSize);
+    }
 
-    ZVideoFrame(const ZVideoFrame &other) : yuv420pData(other.yuv420pData) {}
+    // Copy constructor
+    ZVideoFrame(const ZVideoFrame &other)
+        : width(other.width), height(other.height), timestamp(other.timestamp)
+    {
+        int dataSize = other.width * other.height * 3 / 2;
+        yuv420pData = new uchar[dataSize];
+        std::memcpy(yuv420pData, other.yuv420pData, dataSize);
+    }
 
+    // Operator=
     ZVideoFrame &operator=(const ZVideoFrame &other)
     {
         if (this != &other)
         {
-            yuv420pData = other.yuv420pData;
+            delete[] yuv420pData; // Giải phóng bộ nhớ cũ
+            width = other.width;
+            height = other.height;
+            timestamp = other.timestamp;
+            int dataSize = other.width * other.height * 3 / 2;
+            yuv420pData = new uchar[dataSize];
+            std::memcpy(yuv420pData, other.yuv420pData, dataSize);
         }
         return *this;
     }
 
+    // Destructor
     ~ZVideoFrame()
     {
         delete[] yuv420pData;

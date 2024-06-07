@@ -7,12 +7,13 @@ MainWindow::MainWindow(std::shared_ptr<CallController> callController, QWidget *
       _callController(callController)
 {
     ui->setupUi(this);
+    ui->videoFrameLabelLocal->raise();
 
-    connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onBtnStartCameraClicked);
-    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onBtnStopCameraClicked);
+    connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onBtnStartCallClicked);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onBtnStopCallClicked);
 
-    _callController->setVideoFrameLabel(ui->videoFrameLabelLocal);
-
+    _callController->setVideoFrameLabelLocal(ui->videoFrameLabelLocal);
+    _callController->setVideoFrameLabelPartner(ui->videoFrameLabelPartner);
 }
 
 MainWindow::~MainWindow()
@@ -20,13 +21,19 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::onBtnStartCameraClicked()
+void MainWindow::onBtnStartCallClicked()
 {
-    qDebug() << "onBtnStartCameraClicked";
-    _callController->startCamera();
+    qDebug() << "onBtnStartCallClicked";
+    QString ipText = ui->textIP->toPlainText();
+    QString portText = ui->textPort->toPlainText();
+    int partnerPort = portText.toInt();
+    // std::string partnerIP = ipText.toStdString();
+    std::string partnerIP = "127.0.0.1";
+    _callController->startCall(partnerIP, partnerPort);
 }
 
-void MainWindow::onBtnStopCameraClicked()
+void MainWindow::onBtnStopCallClicked()
 {
-    _callController->stopCamera();
+    qDebug() << "onBtnStopCallClicked";
+    _callController->stopCall();
 }

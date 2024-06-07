@@ -3,8 +3,8 @@
 
 #include <QMainWindow>
 #include "./CallController/CallController.h"
-
 #include <memory>
+#include <qDebug>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -23,8 +23,8 @@ public:
 
 public slots:
     // handle button
-    void onBtnStartCameraClicked();
-    void onBtnStopCameraClicked();
+    void onBtnStartCallClicked();
+    void onBtnStopCallClicked();
 
 private:
     Ui::MainWindow *ui;

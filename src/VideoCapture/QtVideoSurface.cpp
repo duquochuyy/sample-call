@@ -12,7 +12,7 @@ bool QTVideoSurface::present(const QVideoFrame &frame)
 {
     if (frame.isValid())
     {
-//         frame.image().save("original.jpg");
+        //         frame.image().save("original.jpg");
 
         QVideoFrame cloneFrame(frame);
         cloneFrame.map(QAbstractVideoBuffer::ReadOnly);
@@ -21,9 +21,10 @@ bool QTVideoSurface::present(const QVideoFrame &frame)
         {
             int width = cloneFrame.width();
             int height = cloneFrame.height();
+            uint64_t timestamp = Utils::getCurrentTimestamp();
             const uchar *nv12Data = cloneFrame.bits();
             const uchar *yuv420pData = processNV12DatatToYUV420(nv12Data, width, height);
-            emit frameCaptured(yuv420pData, width, height);
+            emit frameCaptured(yuv420pData, width, height, timestamp);
         }
 
         cloneFrame.unmap();
