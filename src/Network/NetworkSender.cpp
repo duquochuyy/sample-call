@@ -32,6 +32,10 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port)
         qDebug() << "Connection Failed";
         return false;
     }
+    {
+        // std::lock_guard<std::mutex> lock(socketMutex);
+        send(sock, &localPort, sizeof(localPort), 0);
+    }
     isSending = true;
     startSending();
     return true;
@@ -45,11 +49,16 @@ void NetworkSender::sendData(const ZVideoFrame &frame)
 
 void NetworkSender::disconnect()
 {
-    isSending = false;
-    if (sock >= 0)
+    if (isSending)
     {
-        close(sock);
-        sock = -1;
+        std::string disconnectMessage = "disconnect";
+        send(sock, disconnectMessage.c_str(), disconnectMessage.size(), 0);
+        isSending = false;
+        if (sock >= 0)
+        {
+            close(sock);
+            sock = -1;
+        }
     }
 }
 
@@ -63,8 +72,9 @@ void NetworkSender::startSending()
                                       {
                                            std::this_thread::sleep_for(std::chrono::milliseconds(33));
                                            int dataSize = currentFrame.width  * currentFrame.height * 3/2;
-                                           int totalPackets = (dataSize + (PACKET_SIZE - 1) - sizeof(uint64_t) - 2 * sizeof(int)) / (PACKET_SIZE - sizeof(uint64_t) - 2 * sizeof(int));
-                                            int offset = 0;
+                                           int totalPackets = (dataSize + (PACKET_SIZE - 1) - sizeof(uint64_t) - 4 * sizeof(int)) / (PACKET_SIZE - sizeof(uint64_t) -  4 * sizeof(int));
+                                           int offset = 0;
+                                            // qDebug() << "send data" << currentFrame.timestamp;
                                            for (int packetId = 0; packetId < totalPackets; ++packetId ) {
                                             std::vector<char> packet(PACKET_SIZE);
                                             // Copy timestamp
@@ -76,13 +86,19 @@ void NetworkSender::startSending()
                                             // Copy totalPackets
                                             std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &totalPackets, sizeof(int));
 
+                                            // Copy width
+                                            std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), &currentFrame.width, sizeof(int));
+
+                                            // Copy height
+                                            std::memcpy(packet.data() + sizeof(uint64_t) + 3 * sizeof(int), &currentFrame.height, sizeof(int));
+
                                             // Copy frame data chunk
-                                            int chunkSize = std::min(static_cast<int>(PACKET_SIZE - sizeof(uint64_t) - 2 * sizeof(int)), dataSize - offset);
-                                            std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), currentFrame.yuv420pData + offset, chunkSize);
+                                            int chunkSize = std::min(static_cast<int>(PACKET_SIZE - sizeof(uint64_t) - 4 * sizeof(int)), dataSize - offset);
+                                            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), currentFrame.yuv420pData + offset, chunkSize);
                                             offset += chunkSize;
 
                                             // Send packet
-                                            qDebug() << "send data" << currentFrame.timestamp << packetId << "total" << totalPackets;
+                                            // qDebug() << "send data" << currentFrame.timestamp << packetId << "total" << totalPackets;
                                             send(sock, packet.data(), packet.size(), 0);
                                            }
                                       }
@@ -117,12 +133,12 @@ void NetworkSender::testShowImage(uchar *yuv420pData, int width, int height)
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    if (!rgbImage.save("testImageSender.jpg"))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
+    // if (!rgbImage.save("testImageSender.jpg"))
+    // {
+    //     qDebug() << "Failed to save image to";
+    // }
+    // else
+    // {
+    //     qDebug() << "Image saved to";
+    // }
 }

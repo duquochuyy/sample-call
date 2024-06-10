@@ -32,6 +32,7 @@ public:
     // for receive
     void onReceiveFrame(const ZVideoFrame &frame) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
+    void onRequestDisconnect() override;
 
 public:
     void startCall(std::string partnerIP, int partnerPort);

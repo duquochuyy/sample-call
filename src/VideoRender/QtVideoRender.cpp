@@ -40,7 +40,7 @@ QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    rgbImage.save("abc.jpg");
+    // rgbImage.save("abc.jpg");
     return rgbImage;
 }
 

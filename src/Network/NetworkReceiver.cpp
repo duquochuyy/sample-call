@@ -68,9 +68,9 @@ void NetworkReceiver::handleRequestConnect()
 
     // connect back to partner
     int partnerPort;
-    //    recv(sender_sock, &partnerPort, sizeof(partnerPort), 0);
-    //    connectBackThread = std::thread(&NetworkReceiver::handleConnectBack, this, partnerPort);
-    //    connectBackThread.detach();
+    recv(sender_sock, &partnerPort, sizeof(partnerPort), 0);
+    connectBackThread = std::thread(&NetworkReceiver::handleConnectBack, this, partnerPort);
+    connectBackThread.detach();
 
     receiveThread = std::thread(&NetworkReceiver::receiveData, this);
     receiveThread.detach();
@@ -89,6 +89,7 @@ void NetworkReceiver::handleConnectBack(int partnerPort)
 
 void NetworkReceiver::receiveData()
 {
+    uint64_t newestFrameTimestamp = 0;
     while (true)
     {
         std::vector<char> buffer(PACKER_SIZE);
@@ -98,10 +99,22 @@ void NetworkReceiver::receiveData()
             qDebug() << "Connection closed or error occurred";
             break;
         }
+        if (bytesRead > 0)
+        {
+            std::string message(buffer.begin(), buffer.begin() + bytesRead);
+            if (message == "disconnect")
+            {
+                if (_callback)
+                    _callback->onRequestDisconnect();
+                return;
+            }
+        }
 
         // Extract timestamp
         uint64_t timestamp;
         std::memcpy(&timestamp, buffer.data(), sizeof(uint64_t));
+        if (timestamp < newestFrameTimestamp)
+            continue;
 
         // Extract packerId
         int packetId;
@@ -111,9 +124,17 @@ void NetworkReceiver::receiveData()
         int totalPackets;
         std::memcpy(&totalPackets, buffer.data() + sizeof(uint64_t) + sizeof(int), sizeof(int));
 
-        qDebug() << "receive data" << timestamp << packetId << "total" << totalPackets;
+        // Extract width
+        int width;
+        std::memcpy(&width, buffer.data() + sizeof(uint64_t) + 2 * sizeof(int), sizeof(int));
+
+        // Extract height
+        int height;
+        std::memcpy(&height, buffer.data() + sizeof(uint64_t) + 3 * sizeof(int), sizeof(int));
+
+        //        qDebug() << "receive data" << timestamp << packetId << "total" << totalPackets;
         // Extract frame data chunk
-        int headerSize = sizeof(uint64_t) + 2 * sizeof(int);
+        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
         std::vector<uchar> frameDataChunk(buffer.begin() + headerSize, buffer.end());
 
         // Store the frame data chunk
@@ -138,22 +159,36 @@ void NetworkReceiver::receiveData()
             }
 
             // Process the complete frame
-            ZVideoFrame frame(fullFrameData.data(), 640, 480, timestamp);
-            qDebug() << "receive frame" << timestamp;
+            ZVideoFrame frame(fullFrameData.data(), width, height, timestamp);
+            newestFrameTimestamp = timestamp;
+            // delete all older frame
+            // qDebug() << "receive frame" << timestamp;
             if (_callback)
             {
                 _callback->onReceiveFrame(frame);
             }
-
-            // Remove the processed frame from the map
-            bufferFrames.erase(timestamp);
+            for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
+            {
+                if (it->first <= newestFrameTimestamp)
+                {
+                    it = bufferFrames.erase(it); // Loại bỏ frame có timestamp nhỏ hơn hoặc bằng newestFrameTimestamp
+                }
+                else
+                {
+                    ++it;
+                }
+            }
         }
     }
 }
 
 void NetworkReceiver::disconnect()
 {
-
+    if (sender_sock >= 0)
+    {
+        close(sender_sock);
+        sender_sock = -1;
+    }
 }
 
 void NetworkReceiver::startListening()
@@ -193,12 +228,12 @@ void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int hei
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    if (!rgbImage.save("testImageReceiver.jpg"))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
+    // if (!rgbImage.save("testImageReceiver.jpg"))
+    // {
+    //     qDebug() << "Failed to save image to";
+    // }
+    // else
+    // {
+    //     qDebug() << "Image saved to";
+    // }
 }

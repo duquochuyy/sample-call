@@ -40,14 +40,14 @@ QImage PartnerVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    if (!rgbImage.save("partner.jpg"))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
+    // if (!rgbImage.save("partner.jpg"))
+    // {
+    //     qDebug() << "Failed to save image to";
+    // }
+    // else
+    // {
+    //     qDebug() << "Image saved to";
+    // }
 
     return rgbImage;
 }
@@ -56,10 +56,10 @@ void PartnerVideoRender::render(const ZVideoFrame &frame)
 {
     ZVideoFrame localFrame = frame;
     QImage frameConverted = convertYUV420ToRGB(localFrame.yuv420pData, localFrame.width, localFrame.height);
-    qDebug() << "converted";
+    // qDebug() << "converted";
     if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        qDebug() << "rendered";
+        // qDebug() << "rendered";
     }
 }

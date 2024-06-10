@@ -28,9 +28,10 @@ public:
 private:
     int localPort;
     int sock;
-    std::thread sendThread;
     bool isSending;
+
     ZVideoFrame currentFrame;
+    std::thread sendThread;
     std::mutex frameMutex;
     std::mutex socketMutex;
 

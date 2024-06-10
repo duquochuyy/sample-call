@@ -32,14 +32,21 @@ void CallController::onNewVideoFrame(const ZVideoFrame &frame)
 
 void CallController::onReceiveFrame(const ZVideoFrame &frame)
 {
-     _partnerRender->render(frame);
+    _partnerRender->render(frame);
 }
 
-void CallController::onAcceptedConnection(std::string partnerIP, int partnerPort) {
+void CallController::onAcceptedConnection(std::string partnerIP, int partnerPort)
+{
     qDebug() << "Connection accepted. Partner port: " << partnerPort;
-    if (!connectedPartner) {
+    if (!connectedPartner)
+    {
         startCall(partnerIP, partnerPort);
     }
+}
+
+void CallController::onRequestDisconnect()
+{
+    stopCall();
 }
 
 void CallController::onStateChanged()
@@ -58,7 +65,8 @@ void CallController::setVideoFrameLabelPartner(QLabel *label)
 
 void CallController::startCall(std::string partnerIP, int partnerPort)
 {
-    if (!connectedPartner) {
+    if (!connectedPartner)
+    {
         qDebug() << "startCall to port" << partnerPort;
         bool connected = _networkSender->handleConnectPartner(partnerIP, partnerPort);
         if (!connected)
@@ -76,7 +84,7 @@ void CallController::startCall(std::string partnerIP, int partnerPort)
 void CallController::stopCall()
 {
     _vidCapture->stop();
-    _networkReceiver->disconnect();
     _networkSender->disconnect();
+    // _networkReceiver->disconnect();
     connectedPartner = false;
 }

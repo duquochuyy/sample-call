@@ -78,7 +78,7 @@ void QTVideoSurface::processYUVDataToGrayScale(const uchar *yuvData, int width, 
     QImage grayImage = rgbImage.convertToFormat(QImage::Format_Grayscale8);
     qDebug() << "Converted image to grayscale";
     // Further processing can be done here
-    grayImage.save("abc.jpg");
+    // grayImage.save("abc.jpg");
 }
 
 uchar *QTVideoSurface::processNV12DatatToYUV420(const uchar *nv12Data, int width, int height)

@@ -11,10 +11,12 @@
 #include <ctype.h>
 #include <thread>
 #include <vector>
+#include <deque>
 
 #include "./../VideoCapture/VideoCapture.h"
 
 #define PACKER_SIZE 1024
+#define MAX_FRAMES 150
 
 class NetworkReceiver
 {
@@ -24,6 +26,7 @@ public:
     public:
         virtual void onAcceptedConnection(std::string partnerIP, int partnerPort) = 0;
         virtual void onReceiveFrame(const ZVideoFrame &frame) = 0;
+        virtual void onRequestDisconnect() = 0;
     };
 
 public:
@@ -39,6 +42,7 @@ private:
     int _port;
     int receiver_fd;
     int sender_sock;
+    std::unordered_map<uint64_t, std::map<int, std::vector<uchar>>> bufferFrames;
 
     std::thread listenThread;
     std::thread receiveThread;
@@ -51,7 +55,6 @@ private:
     void receiveData();
     void handleConnectBack(int partnerPort);
     void testShowImage(const uchar *yuv420pData, int width, int height);
-    std::unordered_map<uint64_t, std::map<int, std::vector<uchar>>> bufferFrames;
 };
 
 #endif
