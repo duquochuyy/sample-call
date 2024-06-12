@@ -14,7 +14,7 @@ public:
     void render(const ZVideoFrame &frame) override;
 
 private:
-    QLabel* _label;
+    QLabel *_label;
 };
 
 #endif

@@ -2,6 +2,7 @@
 #define NETWORKRECEIVER_H
 
 #include <qDebug>
+#include <QLabel>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -11,7 +12,8 @@
 #include <ctype.h>
 #include <thread>
 #include <vector>
-#include <deque>
+#include <chrono>
+#include <atomic>
 
 #include "./../VideoCapture/VideoCapture.h"
 
@@ -34,7 +36,16 @@ public:
     ~NetworkReceiver();
     void registerCallback(Callback *callback);
     void startListening();
+    void setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate);
     void disconnect();
+
+private:
+    void handleRequestConnect();
+    void receiveData();
+    void handleConnectBack(int partnerPort);
+    void testShowImage(const uchar *yuv420pData, int width, int height, QString fileName);
+    void renderInfoReceive(int width = 640, int height = 480, int FPS = 30, double bitrate = 100.0);
+    void getInfoReceive(int width, int height);
 
 private:
     Callback *_callback;
@@ -51,10 +62,15 @@ private:
     std::mutex socketMutex;
     std::mutex callbackMutex;
 
-    void handleRequestConnect();
-    void receiveData();
-    void handleConnectBack(int partnerPort);
-    void testShowImage(const uchar *yuv420pData, int width, int height);
+    std::atomic<uint64_t> totalBytesReceive;
+    std::atomic<int> frameCount;
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+
+    // for render info
+    QLabel *_labelWidth;
+    QLabel *_labelHeight;
+    QLabel *_labelFPS;
+    QLabel *_labelBitrate;
 };
 
 #endif

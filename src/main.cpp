@@ -96,20 +96,23 @@
 
 std::mutex fileMutex;
 
-int getPortNumber(int basePort) {
+int getPortNumber(int basePort)
+{
     std::lock_guard<std::mutex> guard(fileMutex);
-    const char* filename = "/tmp/app_instance_count.txt";
+    const char *filename = "/tmp/app_instance_count.txt";
     std::ifstream infile(filename);
     int count = 0;
 
-    if (infile.is_open()) {
+    if (infile.is_open())
+    {
         infile >> count;
         infile.close();
     }
 
     count++;
     std::ofstream outfile(filename);
-    if (outfile.is_open()) {
+    if (outfile.is_open())
+    {
         outfile << count;
         outfile.close();
     }
@@ -120,9 +123,13 @@ int getPortNumber(int basePort) {
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    int port = getPortNumber(8080);
+    int port = 8080;
+    if (argc > 1)
+    {
+        port = std::stoi(argv[1]);
+    }
     std::shared_ptr<CallController> _callController = std::make_shared<CallController>(port);
-    MainWindow w(_callController);
+    MainWindow w(_callController, port);
     w.show();
     return a.exec();
 }

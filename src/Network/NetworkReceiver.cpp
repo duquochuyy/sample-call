@@ -1,6 +1,6 @@
 #include "./NetworkReceiver.h"
 
-NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1)
+NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1), totalBytesReceive(0), frameCount(0)
 {
     struct sockaddr_in address;
     int opt = 1;
@@ -48,6 +48,10 @@ NetworkReceiver::~NetworkReceiver()
         close(sender_sock);
         sender_sock = -1;
     }
+    delete _labelWidth;
+    delete _labelHeight;
+    delete _labelFPS;
+    delete _labelBitrate;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback)
@@ -90,6 +94,7 @@ void NetworkReceiver::handleConnectBack(int partnerPort)
 void NetworkReceiver::receiveData()
 {
     uint64_t newestFrameTimestamp = 0;
+    startTime = std::chrono::steady_clock::now();
     while (true)
     {
         std::vector<char> buffer(PACKER_SIZE);
@@ -109,6 +114,8 @@ void NetworkReceiver::receiveData()
                 return;
             }
         }
+
+        totalBytesReceive += bytesRead;
 
         // Extract timestamp
         uint64_t timestamp;
@@ -161,12 +168,14 @@ void NetworkReceiver::receiveData()
             // Process the complete frame
             ZVideoFrame frame(fullFrameData.data(), width, height, timestamp);
             newestFrameTimestamp = timestamp;
-            // delete all older frame
-            // qDebug() << "receive frame" << timestamp;
+            frameCount++;
+            getInfoReceive(width, height);
+
             if (_callback)
             {
                 _callback->onReceiveFrame(frame);
             }
+            // qDebug() << "before: " << bufferFrames.size();
             for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
             {
                 if (it->first <= newestFrameTimestamp)
@@ -178,8 +187,25 @@ void NetworkReceiver::receiveData()
                     ++it;
                 }
             }
+            // qDebug() << "after: " << bufferFrames.size();
+            if (bufferFrames.size() > 30)
+            {
+                qDebug() << "Size of bufferFrames is greater than 30. Timestamps are:";
+                for (const auto &frame : bufferFrames)
+                {
+                    qDebug() << frame.first;
+                }
+            }
         }
     }
+}
+
+void NetworkReceiver::setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate)
+{
+    _labelWidth = width;
+    _labelHeight = height;
+    _labelFPS = FPS;
+    _labelBitrate = bitrate;
 }
 
 void NetworkReceiver::disconnect()
@@ -202,7 +228,7 @@ void NetworkReceiver::startListening()
 }
 
 #include <QImage>
-void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int height)
+void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int height, QString fileName)
 {
     int frameSize = width * height;
     const uchar *yPlane = yuv420pData;
@@ -228,12 +254,36 @@ void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int hei
             rgbImage.setPixel(x, y, qRgb(R, G, B));
         }
     }
-    // if (!rgbImage.save("testImageReceiver.jpg"))
-    // {
-    //     qDebug() << "Failed to save image to";
-    // }
-    // else
-    // {
-    //     qDebug() << "Image saved to";
-    // }
+    if (!rgbImage.save(fileName))
+    {
+        qDebug() << "Failed to save image to";
+    }
+    else
+    {
+        qDebug() << "Image saved to";
+    }
+}
+
+void NetworkReceiver::renderInfoReceive(int width, int height, int FPS, double bitrate)
+{
+    _labelWidth->setText(QString::number(width));
+    _labelHeight->setText(QString::number(height));
+    _labelFPS->setText(QString::number(FPS));
+    _labelBitrate->setText(QString::number(bitrate));
+}
+
+void NetworkReceiver::getInfoReceive(int width, int height)
+{
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
+    {
+        int fps = frameCount.load() / elapsedSeconds.count();
+        double bandwidth = (totalBytesReceive / elapsedSeconds.count()) / 125000;
+        frameCount = 0;
+        totalBytesReceive = 0;
+        startTime = currentTime;
+
+        renderInfoReceive(width, height, fps, bandwidth);
+    }
 }

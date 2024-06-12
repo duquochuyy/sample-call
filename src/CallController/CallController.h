@@ -29,6 +29,9 @@ public:
     void setVideoFrameLabelLocal(QLabel *label);
     void setVideoFrameLabelPartner(QLabel *label);
 
+    void setLabelInfoSend(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate);
+    void setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate);
+
     // for receive
     void onReceiveFrame(const ZVideoFrame &frame) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
@@ -48,6 +51,7 @@ private:
     std::shared_ptr<NetworkReceiver> _networkReceiver;
     // is calling to partner
     bool connectedPartner = false;
+    int applicationPort;
 };
 
 #endif

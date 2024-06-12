@@ -1,10 +1,11 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
-MainWindow::MainWindow(std::shared_ptr<CallController> callController, QWidget *parent)
+MainWindow::MainWindow(std::shared_ptr<CallController> callController, int applicationPort, QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      _callController(callController)
+      _callController(callController),
+      applicationPort(applicationPort)
 {
     ui->setupUi(this);
     ui->videoFrameLabelLocal->raise();
@@ -14,6 +15,10 @@ MainWindow::MainWindow(std::shared_ptr<CallController> callController, QWidget *
 
     _callController->setVideoFrameLabelLocal(ui->videoFrameLabelLocal);
     _callController->setVideoFrameLabelPartner(ui->videoFrameLabelPartner);
+    _callController->setLabelInfoSend(ui->labelSendWidth, ui->labelSendHeight, ui->labelSendFPS, ui->labelSendBitrate);
+    _callController->setLabelInfoReceive(ui->labelReceiveWidth, ui->labelReceiveHeight, ui->labelReceiveFPS, ui->labelReceiveBitrate);
+
+    (applicationPort == 8080) ? partnerPort = 8081 : partnerPort = 8080;
 }
 
 MainWindow::~MainWindow()
@@ -26,10 +31,10 @@ void MainWindow::onBtnStartCallClicked()
     qDebug() << "onBtnStartCallClicked";
     QString ipText = ui->textIP->toPlainText();
     QString portText = ui->textPort->toPlainText();
-    int partnerPort = portText.toInt();
-    // std::string partnerIP = ipText.toStdString();
-    std::string partnerIP = "127.0.0.1";
-    _callController->startCall(partnerIP, partnerPort);
+    // int partnerPort = portText.toInt();
+    //    int partnerPort = portText.toInt() - 1;
+    //     std::string partnerIP = ipText.toStdString();
+    _callController->startCall("127.0.0.1", partnerPort);
 }
 
 void MainWindow::onBtnStopCallClicked()

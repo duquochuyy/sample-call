@@ -1,6 +1,6 @@
 #include "./CallController.h"
 
-CallController::CallController(int port)
+CallController::CallController(int port) : applicationPort(port)
 {
     _vidCapture.reset(new QtVideoCapture());
     _vidCapture->registerCallback(this);
@@ -27,7 +27,7 @@ void CallController::onNewVideoFrame(const ZVideoFrame &frame)
 {
     _localRender->render(frame);
     if (connectedPartner)
-        _networkSender->sendData(frame);
+        _networkSender->addNewFrame(frame);
 }
 
 void CallController::onReceiveFrame(const ZVideoFrame &frame)
@@ -61,6 +61,16 @@ void CallController::setVideoFrameLabelLocal(QLabel *label)
 void CallController::setVideoFrameLabelPartner(QLabel *label)
 {
     _partnerRender->setVideoFrameLabel(label);
+}
+
+void CallController::setLabelInfoSend(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate)
+{
+    _networkSender->setLabelInfoSend(width, height, FPS, bitrate);
+}
+
+void CallController::setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate)
+{
+    _networkReceiver->setLabelInfoReceive(width, height, FPS, bitrate);
 }
 
 void CallController::startCall(std::string partnerIP, int partnerPort)
