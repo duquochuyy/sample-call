@@ -48,6 +48,11 @@ QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int
 void QtVideoRender::render(const ZVideoFrame &frame)
 {
     QImage frameConverted = convertYUV420ToRGB(frame.yuv420pData, frame.width, frame.height);
+    if (frameConverted.isNull())
+    {
+        qDebug() << "Local Converted frame is null.";
+        return;
+    }
     if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));

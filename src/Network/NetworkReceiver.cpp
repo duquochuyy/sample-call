@@ -100,7 +100,9 @@ void NetworkReceiver::receiveData()
     while (true)
     {
         std::vector<char> buffer(PACKER_SIZE);
+
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
+
         if (bytesRead <= 0)
         {
             qDebug() << "Connection closed or error occurred";
@@ -118,40 +120,31 @@ void NetworkReceiver::receiveData()
 
         totalBytesReceive += bytesRead;
 
-        // Extract timestamp
         uint64_t timestamp;
+        int totalPackets, packetId, width, height, chunkSize;
+        int headerSize = sizeof(uint64_t) + 5 * sizeof(int);
+
         std::memcpy(&timestamp, buffer.data(), sizeof(uint64_t));
         if (timestamp < newestFrameTimestamp)
             continue;
 
-        // Extract packerId
-        int packetId;
-        std::memcpy(&packetId, buffer.data() + sizeof(uint64_t), sizeof(int));
+        std::memcpy(&totalPackets, buffer.data() + sizeof(uint64_t), sizeof(int));
 
-        // Extract totalPackets
-        int totalPackets;
-        std::memcpy(&totalPackets, buffer.data() + sizeof(uint64_t) + sizeof(int), sizeof(int));
+        std::memcpy(&packetId, buffer.data() + sizeof(uint64_t) + sizeof(int), sizeof(int));
 
-        // Extract width
-        int width;
         std::memcpy(&width, buffer.data() + sizeof(uint64_t) + 2 * sizeof(int), sizeof(int));
 
-        // Extract height
-        int height;
         std::memcpy(&height, buffer.data() + sizeof(uint64_t) + 3 * sizeof(int), sizeof(int));
 
-        // Extract frame data chunk
-        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
-        std::vector<char> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + bytesRead);
+        std::memcpy(&chunkSize, buffer.data() + sizeof(uint64_t) + 4 * sizeof(int), sizeof(int));
 
-        // Store the frame data chunk
+        std::vector<uint8_t> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + headerSize + chunkSize);
+
         bufferFrames[timestamp][packetId] = frameDataChunk;
 
-        // Check if we have received all packets for this frame
         if (bufferFrames[timestamp].size() == totalPackets)
         {
-            // Concatenate all chunks to form the complete frame data
-            std::vector<uchar> fullFrameData;
+            std::vector<uint8_t> fullFrameData;
             for (int i = 0; i < totalPackets; ++i)
             {
                 auto &packet = bufferFrames[timestamp][i];
@@ -162,8 +155,8 @@ void NetworkReceiver::receiveData()
             newestFrameTimestamp = timestamp;
             frameCount++;
             getInfoReceive(width, height);
-            qDebug() << "receive data frame: " << QString::number(timestamp) << fullFrameData.size();
 
+            qDebug() << "receive frame" << timestamp << fullFrameData.size();
             if (_callback)
             {
                 _callback->onReceiveFrame(fullFrameData, timestamp);
@@ -172,7 +165,7 @@ void NetworkReceiver::receiveData()
             {
                 if (it->first <= newestFrameTimestamp)
                 {
-                    it = bufferFrames.erase(it); // Loại bỏ frame có timestamp nhỏ hơn hoặc bằng newestFrameTimestamp
+                    it = bufferFrames.erase(it);
                 }
                 else
                 {

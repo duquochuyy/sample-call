@@ -16,6 +16,8 @@ extern "C"
 #include <libavutil/opt.h>
 }
 
+#define TIMEBASE 90000
+
 struct ZEncodedFrame
 {
     std::vector<uint8_t> encodedData;
@@ -83,7 +85,7 @@ struct ZEncodedFrame
 class EncodeFrame
 {
 public:
-    EncodeFrame(int width = 640, int height = 480);
+    EncodeFrame(int width = 1280, int height = 720);
     ~EncodeFrame();
 
     ZEncodedFrame encodeYUV420ToH264(const ZVideoFrame &frame);

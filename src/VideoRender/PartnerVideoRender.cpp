@@ -54,8 +54,13 @@ QImage PartnerVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width
 
 void PartnerVideoRender::render(const ZVideoFrame &frame)
 {
+    qDebug() << "start render partner" << frame.timestamp << frame.width;
     QImage frameConverted = convertYUV420ToRGB(frame.yuv420pData, frame.width, frame.height);
-    if (_label != nullptr)
+    if (frameConverted.isNull())
+    {
+        qDebug() << "Partner Converted frame is null.";
+    }
+    else if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
         qDebug() << "render frame" << QString::number(frame.timestamp);

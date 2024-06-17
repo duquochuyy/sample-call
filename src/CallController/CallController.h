@@ -16,8 +16,8 @@
 #include "./../Codec/EncodeFrame.h"
 #include "./../Codec/DecodeFrame.h"
 
-#define WIDTH 640
-#define HEIGHT 480
+#define WIDTH 1280
+#define HEIGHT 720
 #define FPS 30
 
 class CallController : public VideoCapture::Callback,
@@ -27,7 +27,6 @@ class CallController : public VideoCapture::Callback,
 {
 public:
     CallController(int port = 8080);
-    //    CallController(std::shared_ptr<CallController> callController) {};
     ~CallController();
     // for capture
     void onNewVideoFrame(const ZVideoFrame &frame) override;
@@ -52,7 +51,6 @@ public:
 public:
     void startCall(std::string partnerIP, int partnerPort);
     void stopCall();
-
     void connectToPartner() {}
 
 private:
@@ -68,6 +66,9 @@ private:
     // is calling to partner
     bool connectedPartner = false;
     int applicationPort;
+    // for thread encode and decode
+    std::mutex _decodeMutex;
+    std::mutex _encodeMutex;
 };
 
 #endif

@@ -47,15 +47,6 @@ void CallController::onReceiveFrame(const std::vector<uint8_t> &encodedData, con
 {
     const ZVideoFrame decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
     _partnerRender->render(decodedFrame);
-
-    // optimize CPU but not work
-    // std::thread processThread([this, encodedData, timestamp]()
-    //                           {
-    // const ZVideoFrame decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
-
-    // _partnerRender->render(decodedFrame); });
-
-    // processThread.detach();
 }
 
 void CallController::onAcceptedConnection(std::string partnerIP, int partnerPort)

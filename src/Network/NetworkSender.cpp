@@ -76,7 +76,6 @@ void NetworkSender::disconnect()
 
 void NetworkSender::sendData()
 {
-    auto frameDuration = std::chrono::duration<double, std::milli>(33.3);
     while (isSending)
     {
         if (!hasNewFrame)
@@ -88,27 +87,28 @@ void NetworkSender::sendData()
         const std::lock_guard<std::mutex> lock(encodedFrameMutex);
 
         int dataSize = currentEncodedFrame.encodedData.size();
-        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
+        int headerSize = sizeof(uint64_t) + 5 * sizeof(int);
         int totalPackets = (dataSize + (PACKET_SIZE - 1) - headerSize) / (PACKET_SIZE - headerSize);
         int offset = 0;
-        qDebug() << "send data frame: " << QString::number(currentEncodedFrame.timestamp) << dataSize;
+
         for (int packetId = 0; packetId < totalPackets; ++packetId)
         {
             int chunkSize = std::min(static_cast<int>(PACKET_SIZE - headerSize), dataSize - offset);
-
-            std::vector<char> packet(headerSize + chunkSize);
+            std::vector<char> packet(PACKET_SIZE);
 
             std::memcpy(packet.data(), &currentEncodedFrame.timestamp, sizeof(uint64_t));
 
-            std::memcpy(packet.data() + sizeof(uint64_t), &packetId, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t), &totalPackets, sizeof(int));
 
-            std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &totalPackets, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &packetId, sizeof(int));
 
             std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), &currentEncodedFrame.width, sizeof(int));
 
             std::memcpy(packet.data() + sizeof(uint64_t) + 3 * sizeof(int), &currentEncodedFrame.height, sizeof(int));
 
-            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), currentEncodedFrame.encodedData.data() + offset, chunkSize);
+            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), &chunkSize, sizeof(int));
+
+            std::memcpy(packet.data() + sizeof(uint64_t) + 5 * sizeof(int), currentEncodedFrame.encodedData.data() + offset, chunkSize);
 
             offset += chunkSize;
 

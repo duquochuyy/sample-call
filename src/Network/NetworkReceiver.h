@@ -29,7 +29,7 @@ public:
         virtual void onAcceptedConnection(std::string partnerIP, int partnerPort) = 0;
         virtual void onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
-        virtual void onRenderInfoReceiver(int width = 640, int height = 480, int fps = 30, double bitrate = 1.0) = 0;
+        virtual void onRenderInfoReceiver(int width = 1280, int height = 720, int fps = 30, double bitrate = 1.0) = 0;
     };
 
 public:
@@ -53,7 +53,7 @@ private:
     int _port;
     int receiver_fd;
     int sender_sock;
-    std::unordered_map<uint64_t, std::map<int, std::vector<char>>> bufferFrames;
+    std::unordered_map<uint64_t, std::map<int, std::vector<uint8_t>>> bufferFrames;
 
     std::thread listenThread;
     std::thread receiveThread;

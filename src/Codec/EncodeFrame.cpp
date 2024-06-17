@@ -15,7 +15,7 @@ EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height)
     param.rc.i_rc_method = X264_RC_CRF;
     param.rc.f_rf_constant = 23;
     param.rc.i_vbv_buffer_size = 5000000;
-    param.rc.i_vbv_max_bitrate = 1500000;
+    param.rc.i_vbv_max_bitrate = 5000000;
     param.b_repeat_headers = 1;
     param.b_annexb = 1;
 
@@ -49,7 +49,7 @@ ZEncodedFrame EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame)
     pic.img.plane[0] = const_cast<uint8_t *>(frame.yuv420pData);
     pic.img.plane[1] = pic.img.plane[0] + frame.width * frame.height;
     pic.img.plane[2] = pic.img.plane[1] + frame.width * frame.height / 4;
-    pic.i_pts = frame.timestamp;
+    pic.i_pts = (frame.timestamp * TIMEBASE) / 1000;
 
     x264_nal_t *nal;
     int i_nal;
