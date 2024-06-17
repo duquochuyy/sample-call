@@ -2,6 +2,7 @@
 #define NETWORKRECEIVER_H
 
 #include <qDebug>
+#include <QLabel>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -11,7 +12,8 @@
 #include <ctype.h>
 #include <thread>
 #include <vector>
-#include <deque>
+#include <chrono>
+#include <atomic>
 
 #include "./../VideoCapture/VideoCapture.h"
 
@@ -25,8 +27,9 @@ public:
     {
     public:
         virtual void onAcceptedConnection(std::string partnerIP, int partnerPort) = 0;
-        virtual void onReceiveFrame(const ZVideoFrame &frame) = 0;
+        virtual void onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
+        virtual void onRenderInfoReceiver(int width = 640, int height = 480, int fps = 30, double bitrate = 1.0) = 0;
     };
 
 public:
@@ -37,12 +40,20 @@ public:
     void disconnect();
 
 private:
+    void handleRequestConnect();
+    void receiveData();
+    void handleConnectBack(int partnerPort);
+    void handleRequestDisconnect();
+    void testShowImage(const uchar *yuv420pData, int width, int height, QString fileName);
+    void getInfoReceive(int width, int height);
+
+private:
     Callback *_callback;
 
     int _port;
     int receiver_fd;
     int sender_sock;
-    std::unordered_map<uint64_t, std::map<int, std::vector<uchar>>> bufferFrames;
+    std::unordered_map<uint64_t, std::map<int, std::vector<char>>> bufferFrames;
 
     std::thread listenThread;
     std::thread receiveThread;
@@ -51,10 +62,9 @@ private:
     std::mutex socketMutex;
     std::mutex callbackMutex;
 
-    void handleRequestConnect();
-    void receiveData();
-    void handleConnectBack(int partnerPort);
-    void testShowImage(const uchar *yuv420pData, int width, int height);
+    std::atomic<uint64_t> totalBytesReceive;
+    std::atomic<int> frameCount;
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 
 #endif

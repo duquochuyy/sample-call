@@ -28,7 +28,6 @@ void QtVideoCapture::setSetting(int width, int height)
 void QtVideoCapture::start()
 {
     qDebug() << "QtVideoCapture::start";
-    setSetting(640, 480);
     camera->start();
 }
 

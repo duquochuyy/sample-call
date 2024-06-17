@@ -1,9 +1,11 @@
 #include "./CallController.h"
 
-CallController::CallController(int port)
+CallController::CallController(int port) : applicationPort(port)
 {
     _vidCapture.reset(new QtVideoCapture());
     _vidCapture->registerCallback(this);
+    _vidCapture->setSetting(WIDTH, HEIGHT);
+
     _localRender.reset(new QtVideoRender());
     _localRender->registerCallback(this);
     _partnerRender.reset(new PartnerVideoRender());
@@ -14,6 +16,14 @@ CallController::CallController(int port)
     _networkReceiver->startListening();
 
     _networkSender.reset(new NetworkSender(port));
+    _networkSender->registerCallback(this);
+
+    _infoNetworkSender.reset(new InfoNetwork());
+    _infoNetworkReceiver.reset(new InfoNetwork());
+
+    _encodeFrame.reset(new EncodeFrame(WIDTH, HEIGHT));
+    _decodeFrame.reset(new DecodeFrame(WIDTH, HEIGHT));
+
     _vidCapture->start();
 }
 
@@ -27,12 +37,25 @@ void CallController::onNewVideoFrame(const ZVideoFrame &frame)
 {
     _localRender->render(frame);
     if (connectedPartner)
-        _networkSender->sendData(frame);
+    {
+        const ZEncodedFrame encodedFrame = _encodeFrame->encodeYUV420ToH264(frame);
+        _networkSender->addNewEncodedFrame(encodedFrame);
+    }
 }
 
-void CallController::onReceiveFrame(const ZVideoFrame &frame)
+void CallController::onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp)
 {
-    _partnerRender->render(frame);
+    const ZVideoFrame decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
+    _partnerRender->render(decodedFrame);
+
+    // optimize CPU but not work
+    // std::thread processThread([this, encodedData, timestamp]()
+    //                           {
+    // const ZVideoFrame decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
+
+    // _partnerRender->render(decodedFrame); });
+
+    // processThread.detach();
 }
 
 void CallController::onAcceptedConnection(std::string partnerIP, int partnerPort)
@@ -63,6 +86,16 @@ void CallController::setVideoFrameLabelPartner(QLabel *label)
     _partnerRender->setVideoFrameLabel(label);
 }
 
+void CallController::setLabelInfoSend(QLabel *width, QLabel *height, QLabel *fps, QLabel *bitrate)
+{
+    _infoNetworkSender->setLabel(width, height, fps, bitrate);
+}
+
+void CallController::setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *fps, QLabel *bitrate)
+{
+    _infoNetworkReceiver->setLabel(width, height, fps, bitrate);
+}
+
 void CallController::startCall(std::string partnerIP, int partnerPort)
 {
     if (!connectedPartner)
@@ -87,4 +120,14 @@ void CallController::stopCall()
     _networkSender->disconnect();
     // _networkReceiver->disconnect();
     connectedPartner = false;
+}
+
+void CallController::onRenderInfoReceiver(int width, int height, int fps, double bitrate)
+{
+    _infoNetworkReceiver->renderInfo(width, height, fps, bitrate);
+}
+
+void CallController::onRenderInfoSender(int width, int height, int fps, double bitrate)
+{
+    _infoNetworkSender->renderInfo(width, height, fps, bitrate);
 }

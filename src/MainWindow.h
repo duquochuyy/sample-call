@@ -18,7 +18,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(std::shared_ptr<CallController> callController, QWidget *parent = nullptr);
+    MainWindow(std::shared_ptr<CallController> callController, int applicationPort, QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
@@ -29,5 +29,7 @@ public slots:
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<CallController> _callController;
+    int applicationPort;
+    int partnerPort;
 };
 #endif // MAINWINDOW_H
