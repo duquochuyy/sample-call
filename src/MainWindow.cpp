@@ -15,8 +15,8 @@ MainWindow::MainWindow(std::shared_ptr<CallController> callController, int appli
 
     _callController->setVideoFrameLabelLocal(ui->videoFrameLabelLocal);
     _callController->setVideoFrameLabelPartner(ui->videoFrameLabelPartner);
-    _callController->setLabelInfoSend(ui->labelSendWidth, ui->labelSendHeight, ui->labelSendFPS, ui->labelSendBitrate);
-    _callController->setLabelInfoReceive(ui->labelReceiveWidth, ui->labelReceiveHeight, ui->labelReceiveFPS, ui->labelReceiveBitrate);
+    _callController->setLabelInfoSend(ui->labelSendWidth, ui->labelSendHeight, ui->labelSendFps, ui->labelSendBitrate);
+    _callController->setLabelInfoReceive(ui->labelReceiveWidth, ui->labelReceiveHeight, ui->labelReceiveFps, ui->labelReceiveBitrate);
 
     (applicationPort == 8080) ? partnerPort = 8081 : partnerPort = 8080;
 }

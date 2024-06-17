@@ -25,7 +25,7 @@ public:
     void stop() override;
 
 signals:
-    void frameCaptured(const uchar * yuv420pData, int width, int height, uint64_t timestamp);
+    void frameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp);
 
 private:
     void processYUVDataToGrayScale(const uchar *yuvData, int width, int height);

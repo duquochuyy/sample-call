@@ -16,6 +16,7 @@ void QtVideoRender::setVideoFrameLabel(QLabel *label)
 
 QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int height)
 {
+
     int frameSize = width * height;
     const uchar *yPlane = yuv240Data;
     const uchar *uPlane = yuv240Data + frameSize;

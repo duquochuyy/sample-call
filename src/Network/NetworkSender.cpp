@@ -7,10 +7,11 @@ NetworkSender::NetworkSender(int localPort) : localPort(localPort), sock(-1), is
 NetworkSender::~NetworkSender()
 {
     disconnect();
-    delete _labelWidth;
-    delete _labelHeight;
-    delete _labelFPS;
-    delete _labelBitrate;
+}
+
+void NetworkSender::registerCallback(Callback *callback)
+{
+    _callback = callback;
 }
 
 bool NetworkSender::handleConnectPartner(std::string ip, int port)
@@ -37,7 +38,6 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port)
         return false;
     }
     {
-        // std::lock_guard<std::mutex> lock(socketMutex);
         send(sock, &localPort, sizeof(localPort), 0);
     }
     isSending = true;
@@ -52,12 +52,11 @@ void NetworkSender::addNewFrame(const ZVideoFrame &frame)
     hasNewFrame = true;
 }
 
-void NetworkSender::setLabelInfoSend(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate)
+void NetworkSender::addNewEncodedFrame(const ZEncodedFrame &encodedFrame)
 {
-    _labelWidth = width;
-    _labelHeight = height;
-    _labelFPS = FPS;
-    _labelBitrate = bitrate;
+    const std::lock_guard<std::mutex> lock(encodedFrameMutex);
+    currentEncodedFrame = encodedFrame;
+    hasNewFrame = true;
 }
 
 void NetworkSender::disconnect()
@@ -85,34 +84,34 @@ void NetworkSender::sendData()
             std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(1));
             continue;
         }
-        int dataSize = currentFrame.width * currentFrame.height * 3 / 2;
-        int totalPackets = (dataSize + (PACKET_SIZE - 1) - sizeof(uint64_t) - 4 * sizeof(int)) / (PACKET_SIZE - sizeof(uint64_t) - 4 * sizeof(int));
-        int offset = 0;
 
+        const std::lock_guard<std::mutex> lock(encodedFrameMutex);
+
+        int dataSize = currentEncodedFrame.encodedData.size();
+        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
+        int totalPackets = (dataSize + (PACKET_SIZE - 1) - headerSize) / (PACKET_SIZE - headerSize);
+        int offset = 0;
+        qDebug() << "send data frame: " << QString::number(currentEncodedFrame.timestamp) << dataSize;
         for (int packetId = 0; packetId < totalPackets; ++packetId)
         {
-            std::vector<char> packet(PACKET_SIZE);
-            // Copy timestamp
-            std::memcpy(packet.data(), &currentFrame.timestamp, sizeof(uint64_t));
+            int chunkSize = std::min(static_cast<int>(PACKET_SIZE - headerSize), dataSize - offset);
 
-            // Copy packerId
+            std::vector<char> packet(headerSize + chunkSize);
+
+            std::memcpy(packet.data(), &currentEncodedFrame.timestamp, sizeof(uint64_t));
+
             std::memcpy(packet.data() + sizeof(uint64_t), &packetId, sizeof(int));
 
-            // Copy totalPackets
             std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &totalPackets, sizeof(int));
 
-            // Copy width
-            std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), &currentFrame.width, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), &currentEncodedFrame.width, sizeof(int));
 
-            // Copy height
-            std::memcpy(packet.data() + sizeof(uint64_t) + 3 * sizeof(int), &currentFrame.height, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t) + 3 * sizeof(int), &currentEncodedFrame.height, sizeof(int));
 
-            // Copy frame data chunk
-            int chunkSize = std::min(static_cast<int>(PACKET_SIZE - sizeof(uint64_t) - 4 * sizeof(int)), dataSize - offset);
-            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), currentFrame.yuv420pData + offset, chunkSize);
+            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), currentEncodedFrame.encodedData.data() + offset, chunkSize);
+
             offset += chunkSize;
 
-            // Send packet
             send(sock, packet.data(), packet.size(), 0);
 
             totalBytesSent += packet.size();
@@ -174,14 +173,6 @@ void NetworkSender::testShowImage(uchar *yuv420pData, int width, int height)
     }
 }
 
-void NetworkSender::renderInfoSend(int width, int height, int FPS, double bitrate)
-{
-    _labelWidth->setText(QString::number(width));
-    _labelHeight->setText(QString::number(height));
-    _labelFPS->setText(QString::number(FPS));
-    _labelBitrate->setText(QString::number(bitrate));
-}
-
 void NetworkSender::getInfoSend()
 {
     auto currentTime = std::chrono::steady_clock::now();
@@ -194,6 +185,7 @@ void NetworkSender::getInfoSend()
         totalBytesSent = 0;
         startTime = currentTime;
 
-        renderInfoSend(currentFrame.width, currentFrame.height, fps, bandwidth);
+        if (_callback != nullptr)
+            _callback->onRenderInfoSender(currentEncodedFrame.width, currentEncodedFrame.height, fps, bandwidth);
     }
 }

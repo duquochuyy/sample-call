@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$1" == "build" ]; then
-    qmake
+    qmake SampleCallback.pro -spec macx-clang CONFIG+=debug CONFIG+=qml_debug QMAKE_APPLE_DEVICE_ARCHS="arm64" && /usr/bin/make qmake_all
     make -w
     if [ $? -ne 0 ]; then
         echo "Build failed. Exiting."

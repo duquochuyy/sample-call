@@ -48,10 +48,6 @@ NetworkReceiver::~NetworkReceiver()
         close(sender_sock);
         sender_sock = -1;
     }
-    delete _labelWidth;
-    delete _labelHeight;
-    delete _labelFPS;
-    delete _labelBitrate;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback)
@@ -91,6 +87,12 @@ void NetworkReceiver::handleConnectBack(int partnerPort)
     }
 }
 
+void NetworkReceiver::handleRequestDisconnect()
+{
+    if (_callback)
+        _callback->onRequestDisconnect();
+}
+
 void NetworkReceiver::receiveData()
 {
     uint64_t newestFrameTimestamp = 0;
@@ -109,8 +111,7 @@ void NetworkReceiver::receiveData()
             std::string message(buffer.begin(), buffer.begin() + bytesRead);
             if (message == "disconnect")
             {
-                if (_callback)
-                    _callback->onRequestDisconnect();
+                handleRequestDisconnect();
                 return;
             }
         }
@@ -139,10 +140,9 @@ void NetworkReceiver::receiveData()
         int height;
         std::memcpy(&height, buffer.data() + sizeof(uint64_t) + 3 * sizeof(int), sizeof(int));
 
-        //        qDebug() << "receive data" << timestamp << packetId << "total" << totalPackets;
         // Extract frame data chunk
         int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
-        std::vector<uchar> frameDataChunk(buffer.begin() + headerSize, buffer.end());
+        std::vector<char> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + bytesRead);
 
         // Store the frame data chunk
         bufferFrames[timestamp][packetId] = frameDataChunk;
@@ -151,31 +151,23 @@ void NetworkReceiver::receiveData()
         if (bufferFrames[timestamp].size() == totalPackets)
         {
             // Concatenate all chunks to form the complete frame data
-            int dataSize = 0;
-            for (const auto &packet : bufferFrames[timestamp])
+            std::vector<uchar> fullFrameData;
+            for (int i = 0; i < totalPackets; ++i)
             {
-                dataSize += packet.second.size();
-            }
-
-            std::vector<uchar> fullFrameData(dataSize);
-            int offset = 0;
-            for (const auto &packet : bufferFrames[timestamp])
-            {
-                std::memcpy(fullFrameData.data() + offset, packet.second.data(), packet.second.size());
-                offset += packet.second.size();
+                auto &packet = bufferFrames[timestamp][i];
+                fullFrameData.insert(fullFrameData.end(), packet.begin(), packet.end());
             }
 
             // Process the complete frame
-            ZVideoFrame frame(fullFrameData.data(), width, height, timestamp);
             newestFrameTimestamp = timestamp;
             frameCount++;
             getInfoReceive(width, height);
+            qDebug() << "receive data frame: " << QString::number(timestamp) << fullFrameData.size();
 
             if (_callback)
             {
-                _callback->onReceiveFrame(frame);
+                _callback->onReceiveFrame(fullFrameData, timestamp);
             }
-            // qDebug() << "before: " << bufferFrames.size();
             for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
             {
                 if (it->first <= newestFrameTimestamp)
@@ -187,25 +179,8 @@ void NetworkReceiver::receiveData()
                     ++it;
                 }
             }
-            // qDebug() << "after: " << bufferFrames.size();
-            if (bufferFrames.size() > 30)
-            {
-                qDebug() << "Size of bufferFrames is greater than 30. Timestamps are:";
-                for (const auto &frame : bufferFrames)
-                {
-                    qDebug() << frame.first;
-                }
-            }
         }
     }
-}
-
-void NetworkReceiver::setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate)
-{
-    _labelWidth = width;
-    _labelHeight = height;
-    _labelFPS = FPS;
-    _labelBitrate = bitrate;
 }
 
 void NetworkReceiver::disconnect()
@@ -220,10 +195,7 @@ void NetworkReceiver::disconnect()
 void NetworkReceiver::startListening()
 {
     listenThread = std::thread([this]()
-                               {
-        while (true) {
-            handleRequestConnect();
-        } });
+                               { handleRequestConnect(); });
     listenThread.detach();
 }
 
@@ -264,14 +236,6 @@ void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int hei
     }
 }
 
-void NetworkReceiver::renderInfoReceive(int width, int height, int FPS, double bitrate)
-{
-    _labelWidth->setText(QString::number(width));
-    _labelHeight->setText(QString::number(height));
-    _labelFPS->setText(QString::number(FPS));
-    _labelBitrate->setText(QString::number(bitrate));
-}
-
 void NetworkReceiver::getInfoReceive(int width, int height)
 {
     auto currentTime = std::chrono::steady_clock::now();
@@ -284,6 +248,7 @@ void NetworkReceiver::getInfoReceive(int width, int height)
         totalBytesReceive = 0;
         startTime = currentTime;
 
-        renderInfoReceive(width, height, fps, bandwidth);
+        if (_callback != nullptr)
+            _callback->onRenderInfoReceiver(width, height, fps, bandwidth);
     }
 }

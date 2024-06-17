@@ -183,7 +183,7 @@
      <string>Height:</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelSendFPS">
+   <widget class="QLabel" name="labelSendFps">
     <property name="geometry">
      <rect>
       <x>630</x>
@@ -287,7 +287,7 @@
      <string>height</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelReceiveFPS">
+   <widget class="QLabel" name="labelReceiveFps">
     <property name="geometry">
      <rect>
       <x>630</x>

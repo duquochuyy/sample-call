@@ -4,9 +4,26 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 
+QMAKE_CXXFLAGS += -arch arm64
+QMAKE_LFLAGS += -arch arm64
+
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+
+INCLUDEPATH += \
+    $$PWD/libs/mathlib \
+    $$PWD/libs/x264 \
+    /opt/homebrew/opt/ffmpeg/include
+
+LIBS += \
+    -L$$PWD/libs/mathlib -lmathlib \
+    -L$$PWD/libs/x264 -lx264 \
+    -L/opt/homebrew/opt/ffmpeg/lib -lavcodec -lavformat -lavutil -lswscale
+
+HEADERS += \
+    $$PWD/libs/mathlib/mathlib.h \
+    $$PWD/libs/x264/x264.h
 
 SOURCES += \
     src/main.cpp \
@@ -19,6 +36,9 @@ SOURCES += \
     src/VideoRender/VideoRender.cpp \
     src/Network/NetworkReceiver.cpp \
     src/Network/NetworkSender.cpp \
+    src/InfoNetwork/InfoNetwork.cpp \
+    src/Codec/EncodeFrame.cpp \
+    src/Codec/DecodeFrame.cpp \
     src/utils/utils.cpp \
     src/MainWindow.cpp
 
@@ -32,6 +52,9 @@ HEADERS += \
     src/VideoRender/VideoRender.h \
     src/Network/NetworkReceiver.h \
     src/Network/NetworkSender.h \
+    src/InfoNetwork/InfoNetwork.h \
+    src/Codec/EncodeFrame.h \
+    src/Codec/DecodeFrame.h \
     src/utils/utils.h \
     src/MainWindow.h
 

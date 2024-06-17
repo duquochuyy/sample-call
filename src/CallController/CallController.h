@@ -12,10 +12,18 @@
 #include "./../VideoRender/PartnerVideoRender.h"
 #include "./../Network/NetworkReceiver.h"
 #include "./../Network/NetworkSender.h"
+#include "./../InfoNetwork/InfoNetwork.h"
+#include "./../Codec/EncodeFrame.h"
+#include "./../Codec/DecodeFrame.h"
+
+#define WIDTH 640
+#define HEIGHT 480
+#define FPS 30
 
 class CallController : public VideoCapture::Callback,
                        public VideoRender::Callback,
-                       public NetworkReceiver::Callback
+                       public NetworkReceiver::Callback,
+                       public NetworkSender::Callback
 {
 public:
     CallController(int port = 8080);
@@ -29,13 +37,17 @@ public:
     void setVideoFrameLabelLocal(QLabel *label);
     void setVideoFrameLabelPartner(QLabel *label);
 
-    void setLabelInfoSend(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate);
-    void setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *FPS, QLabel *bitrate);
+    void setLabelInfoSend(QLabel *width, QLabel *height, QLabel *fps, QLabel *bitrate);
+    void setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *fps, QLabel *bitrate);
 
     // for receive
-    void onReceiveFrame(const ZVideoFrame &frame) override;
+    void onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
     void onRequestDisconnect() override;
+    void onRenderInfoReceiver(int width = WIDTH, int height = HEIGHT, int fps = FPS, double bitrate = 1.0) override;
+
+    // for send
+    void onRenderInfoSender(int width = WIDTH, int height = HEIGHT, int fps = FPS, double bitrate = 1.0) override;
 
 public:
     void startCall(std::string partnerIP, int partnerPort);
@@ -49,6 +61,10 @@ private:
     std::shared_ptr<VideoRender> _partnerRender;
     std::shared_ptr<NetworkSender> _networkSender;
     std::shared_ptr<NetworkReceiver> _networkReceiver;
+    std::shared_ptr<InfoNetwork> _infoNetworkSender;
+    std::shared_ptr<InfoNetwork> _infoNetworkReceiver;
+    std::shared_ptr<EncodeFrame> _encodeFrame;
+    std::shared_ptr<DecodeFrame> _decodeFrame;
     // is calling to partner
     bool connectedPartner = false;
     int applicationPort;
