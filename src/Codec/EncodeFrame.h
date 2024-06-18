@@ -20,7 +20,7 @@ extern "C"
 
 struct ZEncodedFrame
 {
-    std::vector<uint8_t> encodedData;
+    std::vector<uchar> encodedData;
     int frameSize;
     int i_nal;
     int width;
@@ -34,8 +34,13 @@ struct ZEncodedFrame
     }
 
     // Constructor với đầy đủ thông tin
-    ZEncodedFrame(std::vector<uint8_t> _encodedData, int _frameSize, int _i_nal, int _width, int _height, uint64_t _timestamp)
-        : encodedData(std::move(_encodedData)), frameSize(_frameSize), i_nal(_i_nal), width(_width), height(_height), timestamp(_timestamp)
+    ZEncodedFrame(const uchar *data, int _frameSize, int _i_nal, int _width, int _height, uint64_t _timestamp)
+        : encodedData(data, data + _frameSize), frameSize(_frameSize), i_nal(_i_nal), width(_width), height(_height), timestamp(_timestamp)
+    {
+    }
+
+    ZEncodedFrame(const std::vector<uchar> &_encodedData, int _frameSize, int _i_nal, int _width, int _height, uint64_t _timestamp)
+        : encodedData(_encodedData), frameSize(_frameSize), i_nal(_i_nal), width(_width), height(_height), timestamp(_timestamp)
     {
     }
 
@@ -80,6 +85,7 @@ struct ZEncodedFrame
         }
         return *this;
     }
+    ~ZEncodedFrame() = default;
 };
 
 class EncodeFrame
@@ -88,7 +94,7 @@ public:
     EncodeFrame(int width = 1280, int height = 720);
     ~EncodeFrame();
 
-    ZEncodedFrame encodeYUV420ToH264(const ZVideoFrame &frame);
+    std::shared_ptr<ZEncodedFrame> encodeYUV420ToH264(const std::shared_ptr<ZVideoFrame> &frame);
 
 private:
     int _width;

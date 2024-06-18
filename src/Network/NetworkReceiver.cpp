@@ -48,6 +48,7 @@ NetworkReceiver::~NetworkReceiver()
         close(sender_sock);
         sender_sock = -1;
     }
+    delete _callback;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback)
@@ -138,17 +139,24 @@ void NetworkReceiver::receiveData()
 
         std::memcpy(&chunkSize, buffer.data() + sizeof(uint64_t) + 4 * sizeof(int), sizeof(int));
 
-        std::vector<uint8_t> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + headerSize + chunkSize);
+        std::vector<uchar> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + headerSize + chunkSize);
 
         bufferFrames[timestamp][packetId] = frameDataChunk;
 
         if (bufferFrames[timestamp].size() == totalPackets)
         {
-            std::vector<uint8_t> fullFrameData;
-            for (int i = 0; i < totalPackets; ++i)
+            int fullFrameSize = 0;
+            for (const auto &packet : bufferFrames[timestamp])
             {
-                auto &packet = bufferFrames[timestamp][i];
-                fullFrameData.insert(fullFrameData.end(), packet.begin(), packet.end());
+                fullFrameSize += packet.second.size();
+            }
+            std::vector<uchar> fullFrameData(fullFrameSize);
+            int offset = 0;
+            for (const auto &packet : bufferFrames[timestamp])
+            {
+                const auto &dataVector = packet.second;
+                std::memcpy(fullFrameData.data() + offset, dataVector.data(), dataVector.size());
+                offset += dataVector.size();
             }
 
             // Process the complete frame
@@ -156,7 +164,7 @@ void NetworkReceiver::receiveData()
             frameCount++;
             getInfoReceive(width, height);
 
-            qDebug() << "receive frame" << timestamp << fullFrameData.size();
+            qDebug() << "receive frame" << timestamp << fullFrameSize;
             if (_callback)
             {
                 _callback->onReceiveFrame(fullFrameData, timestamp);
@@ -190,43 +198,6 @@ void NetworkReceiver::startListening()
     listenThread = std::thread([this]()
                                { handleRequestConnect(); });
     listenThread.detach();
-}
-
-#include <QImage>
-void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int height, QString fileName)
-{
-    int frameSize = width * height;
-    const uchar *yPlane = yuv420pData;
-    const uchar *uPlane = yuv420pData + frameSize;
-    const uchar *vPlane = yuv420pData + frameSize + (frameSize / 4);
-    QImage rgbImage(width, height, QImage::Format_RGB32);
-
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
-            int yIndex = y * width + x;
-            int uvIndex = (y / 2) * (width / 2) + (x / 2);
-
-            int Y = yPlane[yIndex];
-            int U = uPlane[uvIndex] - 128;
-            int V = vPlane[uvIndex] - 128;
-
-            int R = qBound(0, (int)(Y + 1.402 * V), 255);
-            int G = qBound(0, (int)(Y - 0.344136 * U - 0.714136 * V), 255);
-            int B = qBound(0, (int)(Y + 1.772 * U), 255);
-
-            rgbImage.setPixel(x, y, qRgb(R, G, B));
-        }
-    }
-    if (!rgbImage.save(fileName))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
 }
 
 void NetworkReceiver::getInfoReceive(int width, int height)

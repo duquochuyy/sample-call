@@ -12,17 +12,14 @@ QMAKE_LFLAGS += -arch arm64
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 INCLUDEPATH += \
-    $$PWD/libs/mathlib \
     $$PWD/libs/x264 \
     /opt/homebrew/opt/ffmpeg/include
 
 LIBS += \
-    -L$$PWD/libs/mathlib -lmathlib \
     -L$$PWD/libs/x264 -lx264 \
     -L/opt/homebrew/opt/ffmpeg/lib -lavcodec -lavformat -lavutil -lswscale
 
 HEADERS += \
-    $$PWD/libs/mathlib/mathlib.h \
     $$PWD/libs/x264/x264.h
 
 SOURCES += \

@@ -29,7 +29,7 @@ public:
     CallController(int port = 8080);
     ~CallController();
     // for capture
-    void onNewVideoFrame(const ZVideoFrame &frame) override;
+    void onNewVideoFrame(const std::shared_ptr<ZVideoFrame> &frame) override;
 
     // for render
     void onStateChanged() override;
@@ -40,7 +40,7 @@ public:
     void setLabelInfoReceive(QLabel *width, QLabel *height, QLabel *fps, QLabel *bitrate);
 
     // for receive
-    void onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp) override;
+    void onReceiveFrame(const std::vector<uchar> &encodedData, const uint64_t timestamp) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
     void onRequestDisconnect() override;
     void onRenderInfoReceiver(int width = WIDTH, int height = HEIGHT, int fps = FPS, double bitrate = 1.0) override;

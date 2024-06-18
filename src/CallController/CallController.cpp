@@ -33,19 +33,23 @@ CallController::~CallController()
     _networkSender->disconnect();
 }
 
-void CallController::onNewVideoFrame(const ZVideoFrame &frame)
+void CallController::onNewVideoFrame(const std::shared_ptr<ZVideoFrame> &frame)
 {
     _localRender->render(frame);
     if (connectedPartner)
     {
-        const ZEncodedFrame encodedFrame = _encodeFrame->encodeYUV420ToH264(frame);
+        const std::shared_ptr<ZEncodedFrame> encodedFrame = _encodeFrame->encodeYUV420ToH264(frame);
+        // qDebug() << "Encoded data pointer: " << reinterpret_cast<void *>(encodedFrame.encodedData.get());
         _networkSender->addNewEncodedFrame(encodedFrame);
+
+        // const std::shared_ptr<ZVideoFrame> decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedFrame->encodedData, encodedFrame->timestamp);
+        // _partnerRender->render(decodedFrame);
     }
 }
 
-void CallController::onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp)
+void CallController::onReceiveFrame(const std::vector<uchar> &encodedData, const uint64_t timestamp)
 {
-    const ZVideoFrame decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
+    const std::shared_ptr<ZVideoFrame> decodedFrame = _decodeFrame->decodeH264ToYUV420(encodedData, timestamp);
     _partnerRender->render(decodedFrame);
 }
 

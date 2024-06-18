@@ -10,8 +10,8 @@ public:
     ~QtVideoRender();
 
     void setVideoFrameLabel(QLabel *label) override;
-    QImage convertYUV420ToRGB(const uchar *yuv240Data, int width, int height) override;
-    void render(const ZVideoFrame &frame) override;
+    QImage convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height) override;
+    void render(const std::shared_ptr<ZVideoFrame> &frame) override;
 
 private:
     QLabel *_label;

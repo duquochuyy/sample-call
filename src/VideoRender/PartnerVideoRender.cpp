@@ -14,12 +14,18 @@ void PartnerVideoRender::setVideoFrameLabel(QLabel *label)
     _label = label;
 }
 
-QImage PartnerVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int height)
+QImage PartnerVideoRender::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height)
 {
+    if (yuv420Data.empty())
+    {
+        qDebug() << "Null yuv420Data pointer.";
+        return QImage();
+    }
+
     int frameSize = width * height;
-    const uchar *yPlane = yuv240Data;
-    const uchar *uPlane = yuv240Data + frameSize;
-    const uchar *vPlane = yuv240Data + frameSize + (frameSize / 4);
+    const uchar *yPlane = yuv420Data.data();
+    const uchar *uPlane = yPlane + frameSize;
+    const uchar *vPlane = uPlane + (frameSize / 4);
     QImage rgbImage(width, height, QImage::Format_RGB32);
 
     for (int y = 0; y < height; ++y)
@@ -52,10 +58,10 @@ QImage PartnerVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width
     return rgbImage;
 }
 
-void PartnerVideoRender::render(const ZVideoFrame &frame)
+void PartnerVideoRender::render(const std::shared_ptr<ZVideoFrame> &frame)
 {
-    qDebug() << "start render partner" << frame.timestamp << frame.width;
-    QImage frameConverted = convertYUV420ToRGB(frame.yuv420pData, frame.width, frame.height);
+    qDebug() << "start render partner" << frame->timestamp << frame->width;
+    QImage frameConverted = convertYUV420ToRGB(frame->yuv420pData, frame->width, frame->height);
     if (frameConverted.isNull())
     {
         qDebug() << "Partner Converted frame is null.";
@@ -63,6 +69,6 @@ void PartnerVideoRender::render(const ZVideoFrame &frame)
     else if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        qDebug() << "render frame" << QString::number(frame.timestamp);
+        qDebug() << "render frame" << QString::number(frame->timestamp);
     }
 }

@@ -23,7 +23,7 @@ bool QTVideoSurface::present(const QVideoFrame &frame)
             int height = cloneFrame.height();
             uint64_t timestamp = Utils::getCurrentTimestamp();
             const uchar *nv12Data = cloneFrame.bits();
-            const uchar *yuv420pData = processNV12DatatToYUV420(nv12Data, width, height);
+            const std::shared_ptr<uchar> yuv420pData = processNV12DatatToYUV420(nv12Data, width, height);
             emit frameCaptured(yuv420pData, width, height, timestamp);
         }
 
@@ -81,17 +81,17 @@ void QTVideoSurface::processYUVDataToGrayScale(const uchar *yuvData, int width, 
     // grayImage.save("abc.jpg");
 }
 
-uchar *QTVideoSurface::processNV12DatatToYUV420(const uchar *nv12Data, int width, int height)
+std::shared_ptr<uchar> QTVideoSurface::processNV12DatatToYUV420(const uchar *nv12Data, int width, int height)
 {
     int frameSize = width * height;
     int yuv420pSize = frameSize + frameSize / 2;
-    uchar *yuv420pData = new uchar[yuv420pSize];
+    auto yuv420pData = std::shared_ptr<uchar>(new uchar[yuv420pSize], std::default_delete<uchar[]>());
     const uchar *yPlane = nv12Data;
     const uchar *uvPlane = nv12Data + frameSize;
-    memcpy(yuv420pData, yPlane, frameSize);
+    memcpy(yuv420pData.get(), yPlane, frameSize);
 
     // U and V Planes
-    uchar *uPlane = yuv420pData + frameSize;
+    uchar *uPlane = yuv420pData.get() + frameSize;
     uchar *vPlane = uPlane + (frameSize / 4);
 
     for (int y = 0; y < height / 2; ++y)

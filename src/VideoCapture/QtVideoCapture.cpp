@@ -36,11 +36,13 @@ void QtVideoCapture::stop()
     camera->stop();
 }
 
-void QtVideoCapture::onFrameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp)
+void QtVideoCapture::onFrameCaptured(const std::shared_ptr<uchar> &yuv420pData, int width, int height, uint64_t timestamp)
 {
-    ZVideoFrame newFrame(yuv420pData, width, height, timestamp);
     if (_callback != nullptr)
+    {
+        std::shared_ptr<ZVideoFrame> newFrame = std::make_shared<ZVideoFrame>(yuv420pData, width, height, timestamp);
         _callback->onNewVideoFrame(newFrame);
+    }
 }
 
 void QtVideoCapture::onCameraStateChanged(QCamera::State state)

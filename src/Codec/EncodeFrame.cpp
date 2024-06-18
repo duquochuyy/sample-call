@@ -37,19 +37,18 @@ EncodeFrame::~EncodeFrame()
     x264_picture_clean(&pic);
 }
 
-ZEncodedFrame EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame)
+std::shared_ptr<ZEncodedFrame> EncodeFrame::encodeYUV420ToH264(const std::shared_ptr<ZVideoFrame> &frame)
 {
-    ZEncodedFrame encodedFrame;
     x264_picture_init(&pic);
     pic.img.i_csp = X264_CSP_I420;
     pic.img.i_plane = 3;
-    pic.img.i_stride[0] = frame.width;
-    pic.img.i_stride[1] = frame.width / 2;
-    pic.img.i_stride[2] = frame.width / 2;
-    pic.img.plane[0] = const_cast<uint8_t *>(frame.yuv420pData);
-    pic.img.plane[1] = pic.img.plane[0] + frame.width * frame.height;
-    pic.img.plane[2] = pic.img.plane[1] + frame.width * frame.height / 4;
-    pic.i_pts = (frame.timestamp * TIMEBASE) / 1000;
+    pic.img.i_stride[0] = frame->width;
+    pic.img.i_stride[1] = frame->width / 2;
+    pic.img.i_stride[2] = frame->width / 2;
+    pic.img.plane[0] = const_cast<uint8_t *>(frame->yuv420pData.data());
+    pic.img.plane[1] = pic.img.plane[0] + frame->width * frame->height;
+    pic.img.plane[2] = pic.img.plane[1] + frame->width * frame->height / 4;
+    pic.i_pts = (frame->timestamp * TIMEBASE) / 1000;
 
     x264_nal_t *nal;
     int i_nal;
@@ -58,16 +57,19 @@ ZEncodedFrame EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame)
     if (frameSize < 0)
     {
         qDebug() << "Error encode";
-        return encodedFrame;
+        return nullptr;
     }
-    encodedFrame.frameSize = frameSize;
-    encodedFrame.i_nal = i_nal;
-    encodedFrame.width = frame.width;
-    encodedFrame.height = frame.height;
-    encodedFrame.timestamp = frame.timestamp;
+
+    std::shared_ptr<ZEncodedFrame> encodedFrame = std::make_shared<ZEncodedFrame>();
+    encodedFrame->frameSize = frameSize;
+    encodedFrame->i_nal = i_nal;
+    encodedFrame->width = frame->width;
+    encodedFrame->height = frame->height;
+    encodedFrame->timestamp = frame->timestamp;
+
     for (int i = 0; i < i_nal; ++i)
     {
-        encodedFrame.encodedData.insert(encodedFrame.encodedData.end(), nal[i].p_payload, nal[i].p_payload + nal[i].i_payload);
+        encodedFrame->encodedData.insert(encodedFrame->encodedData.end(), nal[i].p_payload, nal[i].p_payload + nal[i].i_payload);
     }
 
     return encodedFrame;

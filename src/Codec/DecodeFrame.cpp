@@ -50,11 +50,13 @@ DecodeFrame::~DecodeFrame()
     avcodec_free_context(&codecContext);
 }
 
-ZVideoFrame DecodeFrame::decodeH264ToYUV420(const std::vector<uint8_t> &encodedData, const uint64_t timestamp)
+std::shared_ptr<ZVideoFrame> DecodeFrame::decodeH264ToYUV420(const std::vector<uchar> &encodedData, const uint64_t timestamp)
 {
-    ZVideoFrame decodedFrame;
-    packet->data = const_cast<uint8_t *>(encodedData.data());
+    std::shared_ptr<ZVideoFrame> decodedFrame = std::make_shared<ZVideoFrame>();
+
+    packet->data = const_cast<uchar *>(encodedData.data());
     packet->size = encodedData.size();
+    qDebug() << "encoded data" << timestamp << encodedData.size();
 
     int ret = avcodec_send_packet(codecContext, packet);
     if (ret < 0)
@@ -80,14 +82,15 @@ ZVideoFrame DecodeFrame::decodeH264ToYUV420(const std::vector<uint8_t> &encodedD
     int uv_size = frame->width * frame->height / 4;
     int frame_size = y_size + 2 * uv_size;
 
-    decodedFrame.yuv420pData = new uint8_t[frame_size];
-    decodedFrame.width = frame->width;
-    decodedFrame.height = frame->height;
-    decodedFrame.timestamp = timestamp;
+    decodedFrame->width = frame->width;
+    decodedFrame->height = frame->height;
+    decodedFrame->timestamp = timestamp;
 
-    std::memcpy(decodedFrame.yuv420pData, frame->data[0], y_size);                     // Copy Y plane
-    std::memcpy(decodedFrame.yuv420pData + y_size, frame->data[1], uv_size);           // Copy U plane
-    std::memcpy(decodedFrame.yuv420pData + y_size + uv_size, frame->data[2], uv_size); // Copy V plane
+    decodedFrame->yuv420pData.resize(y_size + 2 * uv_size);
+
+    std::memcpy(decodedFrame->yuv420pData.data(), frame->data[0], y_size);                     // Copy Y plane
+    std::memcpy(decodedFrame->yuv420pData.data() + y_size, frame->data[1], uv_size);           // Copy U plane
+    std::memcpy(decodedFrame->yuv420pData.data() + y_size + uv_size, frame->data[2], uv_size); // Copy V plane
 
     return decodedFrame;
 }

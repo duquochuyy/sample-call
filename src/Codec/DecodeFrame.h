@@ -23,7 +23,7 @@ public:
     DecodeFrame(int width, int height);
     ~DecodeFrame();
 
-    ZVideoFrame decodeH264ToYUV420(const std::vector<uint8_t> &encodedData, const uint64_t timestamp);
+    std::shared_ptr<ZVideoFrame> decodeH264ToYUV420(const std::vector<uchar> &encodedData, const uint64_t timestamp);
 
 private:
     const AVCodec *codec;

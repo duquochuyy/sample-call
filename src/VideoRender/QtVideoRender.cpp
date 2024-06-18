@@ -14,13 +14,18 @@ void QtVideoRender::setVideoFrameLabel(QLabel *label)
     _label = label;
 }
 
-QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int height)
+QImage QtVideoRender::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height)
 {
+    if (yuv420Data.empty())
+    {
+        qDebug() << "Null yuv420Data pointer.";
+        return QImage();
+    }
 
     int frameSize = width * height;
-    const uchar *yPlane = yuv240Data;
-    const uchar *uPlane = yuv240Data + frameSize;
-    const uchar *vPlane = yuv240Data + frameSize + (frameSize / 4);
+    const uchar *yPlane = yuv420Data.data();
+    const uchar *uPlane = yPlane + frameSize;
+    const uchar *vPlane = uPlane + (frameSize / 4);
     QImage rgbImage(width, height, QImage::Format_RGB32);
 
     for (int y = 0; y < height; ++y)
@@ -45,9 +50,9 @@ QImage QtVideoRender::convertYUV420ToRGB(const uchar *yuv240Data, int width, int
     return rgbImage;
 }
 
-void QtVideoRender::render(const ZVideoFrame &frame)
+void QtVideoRender::render(const std::shared_ptr<ZVideoFrame> &frame)
 {
-    QImage frameConverted = convertYUV420ToRGB(frame.yuv420pData, frame.width, frame.height);
+    QImage frameConverted = convertYUV420ToRGB(frame->yuv420pData, frame->width, frame->height);
     if (frameConverted.isNull())
     {
         qDebug() << "Local Converted frame is null.";
