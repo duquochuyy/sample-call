@@ -23,12 +23,17 @@ public:
 private slots:
      void onCameraStateChanged(QCamera::State state);
      void onCameraError(QCamera::Error error);
-     void onFrameCaptured(const std::shared_ptr<uchar> &yuv420pData, int width, int height, uint64_t timestamp);
+     void onFrameCapturedRawFormat(const ZRootFrame &frame);
+
+private:
+     void getInfo(int width, int height);
 
 private:
      QCamera *camera;
-
      QTVideoSurface *videoSurface;
+
+     std::atomic<int> frameCount;
+     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 
 #endif

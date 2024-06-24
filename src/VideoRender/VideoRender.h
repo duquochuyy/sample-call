@@ -15,6 +15,8 @@ public:
     {
     public:
         virtual void onStateChanged() = 0;
+        virtual void onShowInfoLocalFps(int fps) = 0;
+        virtual void onShowInfoPartnerFps(int fps) = 0;
     };
 
 public:
@@ -24,8 +26,7 @@ public:
     void registerCallback(Callback *callback);
 
     virtual void setVideoFrameLabel(QLabel *label) = 0;
-    virtual QImage convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height) = 0;
-    virtual void render(const std::shared_ptr<ZVideoFrame> &frame) = 0;
+    virtual void render(const QImage &image) = 0;
 
 protected:
     Callback *_callback;

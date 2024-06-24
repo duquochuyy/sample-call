@@ -1,6 +1,6 @@
 #include "./QtVideoSurface.h"
 
-QTVideoSurface::QTVideoSurface(QObject *parent) : QAbstractVideoSurface(parent) {}
+QTVideoSurface::QTVideoSurface(QObject *parent) : QAbstractVideoSurface(parent), frameCount(0) {}
 
 QList<QVideoFrame::PixelFormat> QTVideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
 {
@@ -12,19 +12,19 @@ bool QTVideoSurface::present(const QVideoFrame &frame)
 {
     if (frame.isValid())
     {
-        //         frame.image().save("original.jpg");
-
         QVideoFrame cloneFrame(frame);
         cloneFrame.map(QAbstractVideoBuffer::ReadOnly);
 
         if (cloneFrame.pixelFormat() == QVideoFrame::Format_NV12)
         {
+            getInfo();
+            const uchar *nv12Data = cloneFrame.bits();
             int width = cloneFrame.width();
             int height = cloneFrame.height();
-            uint64_t timestamp = Utils::getCurrentTimestamp();
-            const uchar *nv12Data = cloneFrame.bits();
-            const std::shared_ptr<uchar> yuv420pData = processNV12DatatToYUV420(nv12Data, width, height);
-            emit frameCaptured(yuv420pData, width, height, timestamp);
+            const uint64_t timestamp = Utils::getCurrentTimestamp();
+            // auto frame = std::make_shared<ZRootFrame>(nv12Data, width * height * 3 / 2, width, height, timestamp);
+            ZRootFrame frame(nv12Data, width * height * 3 / 2, width, height, timestamp);
+            emit frameCapturedRawFormat(frame);
         }
 
         cloneFrame.unmap();
@@ -45,64 +45,16 @@ void QTVideoSurface::stop()
     QAbstractVideoSurface::stop();
 }
 
-void QTVideoSurface::processYUVDataToGrayScale(const uchar *yuvData, int width, int height)
+void QTVideoSurface::getInfo()
 {
-    int frameSize = width * height;
-    const uchar *yPlane = yuvData;
-    const uchar *uPlane = yuvData + frameSize;
-    const uchar *vPlane = yuvData + frameSize + (frameSize / 4);
-
-    // convert to
-    QImage rgbImage(width, height, QImage::Format_RGB32);
-
-    for (int y = 0; y < height; ++y)
+    frameCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
     {
-        for (int x = 0; x < width; ++x)
-        {
-            int yIndex = y * width + x;
-            int uvIndex = (y / 2) * (width / 2) + (x / 2);
-
-            int Y = yPlane[yIndex];
-            int U = uPlane[uvIndex] - 128;
-            int V = vPlane[uvIndex] - 128;
-
-            int R = qBound(0, (int)(Y + 1.402 * V), 255);
-            int G = qBound(0, (int)(Y - 0.344136 * U - 0.714136 * V), 255);
-            int B = qBound(0, (int)(Y + 1.772 * U), 255);
-
-            rgbImage.setPixel(x, y, qRgb(R, G, B));
-        }
+        int fps = frameCount.load() / elapsedSeconds.count();
+        frameCount = 0;
+        startTime = currentTime;
+        // qDebug() << "FPS capture in surface: " << fps;
     }
-
-    // Example: Convert to grayscale
-    QImage grayImage = rgbImage.convertToFormat(QImage::Format_Grayscale8);
-    qDebug() << "Converted image to grayscale";
-    // Further processing can be done here
-    // grayImage.save("abc.jpg");
-}
-
-std::shared_ptr<uchar> QTVideoSurface::processNV12DatatToYUV420(const uchar *nv12Data, int width, int height)
-{
-    int frameSize = width * height;
-    int yuv420pSize = frameSize + frameSize / 2;
-    auto yuv420pData = std::shared_ptr<uchar>(new uchar[yuv420pSize], std::default_delete<uchar[]>());
-    const uchar *yPlane = nv12Data;
-    const uchar *uvPlane = nv12Data + frameSize;
-    memcpy(yuv420pData.get(), yPlane, frameSize);
-
-    // U and V Planes
-    uchar *uPlane = yuv420pData.get() + frameSize;
-    uchar *vPlane = uPlane + (frameSize / 4);
-
-    for (int y = 0; y < height / 2; ++y)
-    {
-        for (int x = 0; x < width / 2; ++x)
-        {
-            int uvIndex = y * width + 2 * x;
-            uPlane[y * (width / 2) + x] = uvPlane[uvIndex];
-            vPlane[y * (width / 2) + x] = uvPlane[uvIndex + 1];
-        }
-    }
-
-    return yuv420pData;
 }

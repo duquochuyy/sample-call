@@ -1,6 +1,6 @@
 #include "./NetworkReceiver.h"
 
-NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1), totalBytesReceive(0), frameCount(0)
+NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1), totalBytesReceive(0), frameCount(0), packetCount(0)
 {
     struct sockaddr_in address;
     int opt = 1;
@@ -104,6 +104,8 @@ void NetworkReceiver::receiveData()
 
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
 
+        packetCount++;
+
         if (bytesRead <= 0)
         {
             qDebug() << "Connection closed or error occurred";
@@ -162,12 +164,15 @@ void NetworkReceiver::receiveData()
             // Process the complete frame
             newestFrameTimestamp = timestamp;
             frameCount++;
-            getInfoReceive(width, height);
+            getInfo();
 
-            qDebug() << "receive frame" << timestamp << fullFrameSize;
+            qDebug() << "receive frame" << timestamp << fullFrameSize << totalPackets;
+            // ZEncodedFrame encodedFrame(std::move(fullFrameData), fullFrameSize, width, height, timestamp);
+            // qDebug() << "address receive" << &encodedFrame;
             if (_callback)
             {
-                _callback->onReceiveFrame(fullFrameData, timestamp);
+                // _callback->onReceiveFrame(encodedFrame);
+                _callback->onReceiveDataFrame(fullFrameData, timestamp);
             }
             for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
             {
@@ -200,19 +205,21 @@ void NetworkReceiver::startListening()
     listenThread.detach();
 }
 
-void NetworkReceiver::getInfoReceive(int width, int height)
+void NetworkReceiver::getInfo()
 {
     auto currentTime = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
     if (elapsedSeconds.count() >= 1.0)
     {
         int fps = frameCount.load() / elapsedSeconds.count();
+        int pps = packetCount.load() / elapsedSeconds.count();
         double bandwidth = (totalBytesReceive / elapsedSeconds.count()) / 125000;
         frameCount = 0;
+        packetCount = 0;
         totalBytesReceive = 0;
         startTime = currentTime;
 
         if (_callback != nullptr)
-            _callback->onRenderInfoReceiver(width, height, fps, bandwidth);
+            _callback->onShowInfoReceive(fps, pps, bandwidth);
     }
 }

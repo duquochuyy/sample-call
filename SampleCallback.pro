@@ -2,7 +2,7 @@ QT       += core gui widgets multimedia multimediawidgets network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++14
 
 QMAKE_CXXFLAGS += -arch arm64
 QMAKE_LFLAGS += -arch arm64
@@ -33,10 +33,11 @@ SOURCES += \
     src/VideoRender/VideoRender.cpp \
     src/Network/NetworkReceiver.cpp \
     src/Network/NetworkSender.cpp \
-    src/InfoNetwork/InfoNetwork.cpp \
     src/Codec/EncodeFrame.cpp \
     src/Codec/DecodeFrame.cpp \
     src/utils/utils.cpp \
+    src/utils/TimeTracker.cpp \
+    src/utils/ThreadSafeQueue.cpp \
     src/MainWindow.cpp
 
 HEADERS += \
@@ -49,10 +50,11 @@ HEADERS += \
     src/VideoRender/VideoRender.h \
     src/Network/NetworkReceiver.h \
     src/Network/NetworkSender.h \
-    src/InfoNetwork/InfoNetwork.h \
     src/Codec/EncodeFrame.h \
     src/Codec/DecodeFrame.h \
     src/utils/utils.h \
+    src/utils/TimeTracker.h \
+    src/utils/ThreadSafeQueue.h \
     src/MainWindow.h
 
 FORMS += \

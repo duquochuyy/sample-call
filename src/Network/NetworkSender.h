@@ -18,8 +18,10 @@
 #include <iostream>
 #include <x264.h>
 
-#include "./../VideoCapture/VideoCapture.h"
 #include "./../Codec/EncodeFrame.h"
+#include "./../Struct/ZRootFrame.h"
+#include "./../Struct/ZEncodedFrame.h"
+#include "./../Struct/ZVideoFrame.h"
 
 #define PACKET_SIZE 1024
 
@@ -29,7 +31,7 @@ public:
     class Callback
     {
     public:
-        virtual void onRenderInfoSender(int width, int height, int fps, double bitrate) = 0;
+        virtual void onShowInfoSend(int fps, int pps, double bitrate) = 0;
     };
 
 public:
@@ -37,13 +39,13 @@ public:
     ~NetworkSender();
     void registerCallback(Callback *callback);
     bool handleConnectPartner(std::string ip, int port);
-    void addNewEncodedFrame(const std::shared_ptr<ZEncodedFrame> &encodedFrame);
+    void addNewEncodedFrame(const ZEncodedFrame &encodedFrame);
     void disconnect();
 
 private:
     void startSending();
     void sendData();
-    void getInfoSend();
+    void getInfo();
 
 private:
     Callback *_callback;
@@ -52,13 +54,14 @@ private:
     int sock;
     bool isSending;
     bool hasNewFrame = false;
-    std::shared_ptr<ZEncodedFrame> currentEncodedFrame;
+    ZEncodedFrame currentEncodedFrame;
 
     std::thread sendThread;
     std::mutex encodedFrameMutex;
 
     std::atomic<uint64_t> totalBytesSent;
     std::atomic<int> frameCount;
+    std::atomic<int> packetCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 #endif

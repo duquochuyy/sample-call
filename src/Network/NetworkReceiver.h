@@ -15,7 +15,10 @@
 #include <chrono>
 #include <atomic>
 
-#include "./../VideoCapture/VideoCapture.h"
+#include "./../Codec/EncodeFrame.h"
+#include "./../Struct/ZRootFrame.h"
+#include "./../Struct/ZEncodedFrame.h"
+#include "./../Struct/ZVideoFrame.h"
 
 #define PACKER_SIZE 1024
 
@@ -26,9 +29,10 @@ public:
     {
     public:
         virtual void onAcceptedConnection(std::string partnerIP, int partnerPort) = 0;
-        virtual void onReceiveFrame(const std::vector<uchar> &encodedData, const uint64_t timestamp) = 0;
+        virtual void onReceiveFrame(ZEncodedFrame &encodedFrame) = 0;
+        virtual void onReceiveDataFrame(const std::vector<uchar> &fullFrameData, uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
-        virtual void onRenderInfoReceiver(int width = 1280, int height = 720, int fps = 30, double bitrate = 1.0) = 0;
+        virtual void onShowInfoReceive(int fps, int pps, double bitrate) = 0;
     };
 
 public:
@@ -43,7 +47,7 @@ private:
     void receiveData();
     void handleConnectBack(int partnerPort);
     void handleRequestDisconnect();
-    void getInfoReceive(int width, int height);
+    void getInfo();
 
 private:
     Callback *_callback;
@@ -62,6 +66,7 @@ private:
 
     std::atomic<uint64_t> totalBytesReceive;
     std::atomic<int> frameCount;
+    std::atomic<int> packetCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 

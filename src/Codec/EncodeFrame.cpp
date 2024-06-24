@@ -1,6 +1,6 @@
 #include "./EncodeFrame.h"
 
-EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height), encoder(nullptr)
+EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height), encoder(nullptr), frameCount(0)
 {
     x264_param_default_preset(&param, "veryfast", "zerolatency");
     param.i_threads = X264_SYNC_LOOKAHEAD_AUTO;
@@ -37,18 +37,23 @@ EncodeFrame::~EncodeFrame()
     x264_picture_clean(&pic);
 }
 
-std::shared_ptr<ZEncodedFrame> EncodeFrame::encodeYUV420ToH264(const std::shared_ptr<ZVideoFrame> &frame)
+void EncodeFrame::registerCallback(Callback *callback)
+{
+    _callback = callback;
+}
+
+void EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame)
 {
     x264_picture_init(&pic);
     pic.img.i_csp = X264_CSP_I420;
     pic.img.i_plane = 3;
-    pic.img.i_stride[0] = frame->width;
-    pic.img.i_stride[1] = frame->width / 2;
-    pic.img.i_stride[2] = frame->width / 2;
-    pic.img.plane[0] = const_cast<uint8_t *>(frame->yuv420pData.data());
-    pic.img.plane[1] = pic.img.plane[0] + frame->width * frame->height;
-    pic.img.plane[2] = pic.img.plane[1] + frame->width * frame->height / 4;
-    pic.i_pts = (frame->timestamp * TIMEBASE) / 1000;
+    pic.img.i_stride[0] = frame.width;
+    pic.img.i_stride[1] = frame.width / 2;
+    pic.img.i_stride[2] = frame.width / 2;
+    pic.img.plane[0] = const_cast<uint8_t *>(frame.yuv420pData.data());
+    pic.img.plane[1] = pic.img.plane[0] + frame.width * frame.height;
+    pic.img.plane[2] = pic.img.plane[1] + frame.width * frame.height / 4;
+    pic.i_pts = (frame.timestamp * TIMEBASE) / 1000;
 
     x264_nal_t *nal;
     int i_nal;
@@ -57,20 +62,33 @@ std::shared_ptr<ZEncodedFrame> EncodeFrame::encodeYUV420ToH264(const std::shared
     if (frameSize < 0)
     {
         qDebug() << "Error encode";
-        return nullptr;
+        return;
     }
 
-    std::shared_ptr<ZEncodedFrame> encodedFrame = std::make_shared<ZEncodedFrame>();
-    encodedFrame->frameSize = frameSize;
-    encodedFrame->i_nal = i_nal;
-    encodedFrame->width = frame->width;
-    encodedFrame->height = frame->height;
-    encodedFrame->timestamp = frame->timestamp;
+    encodedFrame.frameSize = frameSize;
+    encodedFrame.width = frame.width;
+    encodedFrame.height = frame.height;
+    encodedFrame.timestamp = frame.timestamp;
 
     for (int i = 0; i < i_nal; ++i)
     {
-        encodedFrame->encodedData.insert(encodedFrame->encodedData.end(), nal[i].p_payload, nal[i].p_payload + nal[i].i_payload);
+        encodedFrame.encodedData.insert(encodedFrame.encodedData.end(), nal[i].p_payload, nal[i].p_payload + nal[i].i_payload);
     }
+    getInfo(_width, _height);
+}
 
-    return encodedFrame;
+void EncodeFrame::getInfo(int width, int height)
+{
+    frameCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
+    {
+        int fps = frameCount.load() / elapsedSeconds.count();
+        frameCount = 0;
+        startTime = currentTime;
+
+        if (_callback != nullptr)
+            _callback->onShowInfoEncode(width, height, fps);
+    }
 }

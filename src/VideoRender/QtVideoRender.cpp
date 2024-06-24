@@ -1,12 +1,16 @@
 #include "./QtVideoRender.h"
 
-QtVideoRender::QtVideoRender()
+QtVideoRender::QtVideoRender() : frameCount(0)
 {
+    startTime = std::chrono::steady_clock::now();
 }
 
 QtVideoRender::~QtVideoRender()
 {
     delete _label;
+    delete _labelWidth;
+    delete _labelHeight;
+    delete _labelFps;
 }
 
 void QtVideoRender::setVideoFrameLabel(QLabel *label)
@@ -14,52 +18,32 @@ void QtVideoRender::setVideoFrameLabel(QLabel *label)
     _label = label;
 }
 
-QImage QtVideoRender::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height)
+void QtVideoRender::render(const QImage &image)
 {
-    if (yuv420Data.empty())
+    if (image.isNull()) // Kiểm tra xem QImage có trống không
     {
-        qDebug() << "Null yuv420Data pointer.";
-        return QImage();
-    }
-
-    int frameSize = width * height;
-    const uchar *yPlane = yuv420Data.data();
-    const uchar *uPlane = yPlane + frameSize;
-    const uchar *vPlane = uPlane + (frameSize / 4);
-    QImage rgbImage(width, height, QImage::Format_RGB32);
-
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
-            int yIndex = y * width + x;
-            int uvIndex = (y / 2) * (width / 2) + (x / 2);
-
-            int Y = yPlane[yIndex];
-            int U = uPlane[uvIndex] - 128;
-            int V = vPlane[uvIndex] - 128;
-
-            int R = qBound(0, (int)(Y + 1.402 * V), 255);
-            int G = qBound(0, (int)(Y - 0.344136 * U - 0.714136 * V), 255);
-            int B = qBound(0, (int)(Y + 1.772 * U), 255);
-
-            rgbImage.setPixel(x, y, qRgb(R, G, B));
-        }
-    }
-    // rgbImage.save("abc.jpg");
-    return rgbImage;
-}
-
-void QtVideoRender::render(const std::shared_ptr<ZVideoFrame> &frame)
-{
-    QImage frameConverted = convertYUV420ToRGB(frame->yuv420pData, frame->width, frame->height);
-    if (frameConverted.isNull())
-    {
-        qDebug() << "Local Converted frame is null.";
+        qDebug() << "Empty image received.";
         return;
     }
     if (_label != nullptr)
     {
-        _label->setPixmap(QPixmap::fromImage(frameConverted).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        _label->setPixmap(QPixmap::fromImage(image).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        getInfo(image.width(), image.height());
+    }
+}
+
+void QtVideoRender::getInfo(int width, int height)
+{
+    frameCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
+    {
+        int fps = frameCount.load() / elapsedSeconds.count();
+        frameCount = 0;
+        startTime = currentTime;
+
+        if (_callback != nullptr)
+            _callback->onShowInfoLocalFps(fps);
     }
 }

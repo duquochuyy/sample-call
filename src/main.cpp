@@ -26,8 +26,8 @@ int main(int argc, char *argv[])
     avformat_network_init();
     qDebug() << "FFmpeg version: " << av_version_info();
 
-    std::shared_ptr<CallController> _callController = std::make_shared<CallController>(port);
-    MainWindow w(_callController, port);
+    std::unique_ptr<CallController> _callController = std::make_unique<CallController>(port);
+    MainWindow w(std::move(_callController), port);
     w.show();
     return a.exec();
 }
