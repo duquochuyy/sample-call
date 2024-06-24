@@ -10,12 +10,12 @@ EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height)
     param.i_height = height;
     param.i_fps_num = 30;
     param.i_fps_den = 1;
-    param.i_keyint_max = 60;
+    param.i_keyint_max = 30; // khoảng cách xuất hiện khung hình I; khung hình mã hóa ko cần tham chiếu đến khung hình khác, giá trị này giảm -> tần suất khung hình I tăng
     param.b_intra_refresh = 1;
     param.rc.i_rc_method = X264_RC_CRF;
-    param.rc.f_rf_constant = 23;
-    param.rc.i_vbv_buffer_size = 5000000;
-    param.rc.i_vbv_max_bitrate = 5000000;
+    param.rc.f_rf_constant = 28; // điều khiển tốc độ mã hóa, cân bằng giữa chất lượng và kích thước tập. Default 23, > 23 có khả năng bị giảm chất lượng ở những chuyển động
+    param.rc.i_vbv_buffer_size = 1000000;
+    param.rc.i_vbv_max_bitrate = 1000000;
     param.b_repeat_headers = 1;
     param.b_annexb = 1;
 

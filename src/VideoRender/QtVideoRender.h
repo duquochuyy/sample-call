@@ -9,7 +9,7 @@ public:
     QtVideoRender();
     ~QtVideoRender();
 
-    void setVideoFrameLabel(QLabel *label) override;
+    void setVideoFrameLabel(QLabel *&label) override;
     void render(const QImage &image) override;
 
 private:

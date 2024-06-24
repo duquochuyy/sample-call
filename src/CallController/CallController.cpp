@@ -192,7 +192,6 @@ void CallController::processDecodeRender()
         qDebug() << framePtr.get()->timestamp << framePtr.get()->encodedData.size();
         std::shared_ptr<ZVideoFrame> decodedFrame = std::make_shared<ZVideoFrame>();
         _decodeFrame->decodeH264ToYUV420(framePtr.get()->encodedData, framePtr.get()->timestamp, decodedFrame);
-        qDebug() << decodedFrame.get()->timestamp << decodedFrame.get()->yuv420pData.size();
         processDecodeTime.stop();
         double decodeTime = processDecodeTime.getAverageTime();
         if (decodeTime != -1)
@@ -219,6 +218,7 @@ void CallController::processConvertPartnerThread()
         // convert to render partner
         QImage imagePartner;
         Utils::convertYUV420ToRGB(framePtr.get()->yuv420pData, framePtr.get()->width, framePtr.get()->height, imagePartner);
+        qDebug() << "Địa chỉ của imagePartner:" << &imagePartner;
         _partnerRender->render(imagePartner);
         processPartnerConvertTime.stop();
         double partnerConvertTime = processPartnerConvertTime.getAverageTime();
@@ -247,12 +247,12 @@ void CallController::onStateChanged()
 {
 }
 
-void CallController::setVideoFrameLabelLocal(QLabel *label)
+void CallController::setVideoFrameLabelLocal(QLabel *&label)
 {
     _localRender->setVideoFrameLabel(label);
 }
 
-void CallController::setVideoFrameLabelPartner(QLabel *label)
+void CallController::setVideoFrameLabelPartner(QLabel *&label)
 {
     _partnerRender->setVideoFrameLabel(label);
 }

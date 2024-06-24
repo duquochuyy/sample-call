@@ -25,7 +25,7 @@ public:
 
     void registerCallback(Callback *callback);
 
-    virtual void setVideoFrameLabel(QLabel *label) = 0;
+    virtual void setVideoFrameLabel(QLabel *&label) = 0;
     virtual void render(const QImage &image) = 0;
 
 protected:

@@ -9,7 +9,7 @@ class PartnerVideoRender : public VideoRender
 public:
     PartnerVideoRender();
     ~PartnerVideoRender();
-    void setVideoFrameLabel(QLabel *label) override;
+    void setVideoFrameLabel(QLabel *&label) override;
     void render(const QImage &image) override;
 
 private:

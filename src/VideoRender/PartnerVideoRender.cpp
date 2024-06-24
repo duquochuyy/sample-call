@@ -9,7 +9,7 @@ PartnerVideoRender::~PartnerVideoRender()
     delete _label;
 }
 
-void PartnerVideoRender::setVideoFrameLabel(QLabel *label)
+void PartnerVideoRender::setVideoFrameLabel(QLabel *&label)
 {
     _label = label;
 }
@@ -21,6 +21,7 @@ void PartnerVideoRender::render(const QImage &image)
         qDebug() << "Empty image received.";
         return;
     }
+
     if (_label != nullptr)
     {
         _label->setPixmap(QPixmap::fromImage(image).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));

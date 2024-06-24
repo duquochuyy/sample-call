@@ -13,7 +13,7 @@ QtVideoRender::~QtVideoRender()
     delete _labelFps;
 }
 
-void QtVideoRender::setVideoFrameLabel(QLabel *label)
+void QtVideoRender::setVideoFrameLabel(QLabel *&label)
 {
     _label = label;
 }

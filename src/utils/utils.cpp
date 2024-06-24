@@ -79,6 +79,7 @@ void Utils::processNV12DatatToRGB(const std::vector<uchar> &nv12Data, int width,
 
 void Utils::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height, QImage &image)
 {
+    qDebug() << "start convert";
     if (yuv420Data.empty())
     {
         qDebug() << "Null yuv420Data pointer.";

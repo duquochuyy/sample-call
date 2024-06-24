@@ -44,8 +44,8 @@ public:
 
     // for render
     void onStateChanged() override;
-    void setVideoFrameLabelLocal(QLabel *label);
-    void setVideoFrameLabelPartner(QLabel *label);
+    void setVideoFrameLabelLocal(QLabel *&label);
+    void setVideoFrameLabelPartner(QLabel *&label);
 
     // for receive
     void onReceiveFrame(ZEncodedFrame &encodedFrame) override;
