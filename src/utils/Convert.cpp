@@ -32,9 +32,6 @@ void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data,
     const uchar *yPlane = nv12Data.data();
     const uchar *uvPlane = nv12Data.data() + frameSize;
 
-    // Convert to RGB
-    image = QImage(width, height, QImage::Format_RGB32);
-
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int yIndex = y * width + x;

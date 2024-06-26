@@ -9,17 +9,15 @@ class QtVideoRender : public VideoRender {
     ~QtVideoRender();
 
     void setVideoFrameLabel(QLabel *&label) override;
-    void render(const QImage &image) override;
+    void render(const std::shared_ptr<void> &frame,
+                ImageFormat format) override;
 
    private:
     void getInfo(int width, int height);
 
    private:
     QLabel *_label;
-    // for show info
-    QLabel *_labelWidth;
-    QLabel *_labelHeight;
-    QLabel *_labelFps;
+    QImage image;
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;

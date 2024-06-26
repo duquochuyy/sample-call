@@ -86,7 +86,7 @@ class CallController : public VideoCapture::Callback,
     std::atomic<bool> connectedPartner;
     int applicationPort;
     // for render ui
-    std::shared_ptr<ZValueInfo> _labelRender;
+    std::shared_ptr<ZValueInfo> _valueInfo;
     // for tracker time process
     TimeTracker processLocalConvertTime;
     TimeTracker processEncodeConvertTime;

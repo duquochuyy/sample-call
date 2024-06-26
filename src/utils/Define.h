@@ -9,4 +9,7 @@
 // for encode
 #define TIMEBASE 90000
 
+// format frame
+enum class ImageFormat { YUV420, NV12, RGB };
+
 #endif
