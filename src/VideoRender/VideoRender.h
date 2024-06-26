@@ -8,18 +8,16 @@
 
 #include "./../VideoCapture/VideoCapture.h"
 
-class VideoRender
-{
-public:
-    class Callback
-    {
-    public:
+class VideoRender {
+   public:
+    class Callback {
+       public:
         virtual void onShowInfoLocalFps(int fps) = 0;
         virtual void onShowInfoPartnerFps(int fps) = 0;
     };
 
-public:
-    VideoRender(){};
+   public:
+    VideoRender() {};
     virtual ~VideoRender() = default;
 
     void registerCallback(Callback *callback);
@@ -27,7 +25,7 @@ public:
     virtual void setVideoFrameLabel(QLabel *&label) = 0;
     virtual void render(const QImage &image) = 0;
 
-protected:
+   protected:
     Callback *_callback;
 };
 

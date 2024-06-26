@@ -1,29 +1,28 @@
 #ifndef YUVWIDGET_H
 #define YUVWIDGET_H
 
-#include <QOpenGLWidget>
-#include <QOpenGLFunctions>
-#include <QOpenGLShaderProgram>
 #include <QByteArray>
 #include <QDebug>
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLWidget>
 
-class YuvWidget : public QOpenGLWidget, public QOpenGLFunctions
-{
+class YuvWidget : public QOpenGLWidget, public QOpenGLFunctions {
     Q_OBJECT
 
-public:
+   public:
     explicit YuvWidget(QWidget *parent = nullptr);
     ~YuvWidget();
 
-public slots:
+   public slots:
     void setFrameData(const QByteArray &yuv420pData, int width, int height);
 
-protected:
+   protected:
     void initializeGL() override;
     void resizeGL(int width, int height) override;
     void paintGL() override;
 
-private:
+   private:
     QOpenGLShaderProgram m_shaderProgram;
     GLuint m_textureY = 0;
     GLuint m_textureU = 0;

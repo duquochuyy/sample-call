@@ -1,11 +1,10 @@
 #ifndef ZROOTFRAME_H
 #define ZROOTFRAME_H
 
+#include <cstdint>  // for uint64_t
 #include <vector>
-#include <cstdint> // for uint64_t
 
-struct ZRootFrame
-{
+struct ZRootFrame {
     std::vector<uchar> nv12Data;
     int width;
     int height;
@@ -24,22 +23,25 @@ struct ZRootFrame
 
     // Copy constructor
     ZRootFrame(const ZRootFrame &other)
-        : nv12Data(other.nv12Data), width(other.width), height(other.height), timestamp(other.timestamp) {}
+        : nv12Data(other.nv12Data),
+          width(other.width),
+          height(other.height),
+          timestamp(other.timestamp) {}
 
     // Move constructor
     ZRootFrame(ZRootFrame &&other) noexcept
-        : nv12Data(std::move(other.nv12Data)), width(other.width), height(other.height), timestamp(other.timestamp)
-    {
+        : nv12Data(std::move(other.nv12Data)),
+          width(other.width),
+          height(other.height),
+          timestamp(other.timestamp) {
         other.width = 0;
         other.height = 0;
         other.timestamp = 0;
     }
 
     // Copy assignment operator
-    ZRootFrame &operator=(const ZRootFrame &other)
-    {
-        if (this != &other)
-        {
+    ZRootFrame &operator=(const ZRootFrame &other) {
+        if (this != &other) {
             nv12Data = other.nv12Data;
             width = other.width;
             height = other.height;
@@ -49,10 +51,8 @@ struct ZRootFrame
     }
 
     // Move assignment operator
-    ZRootFrame &operator=(ZRootFrame &&other) noexcept
-    {
-        if (this != &other)
-        {
+    ZRootFrame &operator=(ZRootFrame &&other) noexcept {
+        if (this != &other) {
             nv12Data = std::move(other.nv12Data);
             width = other.width;
             height = other.height;
@@ -69,15 +69,9 @@ struct ZRootFrame
     ~ZRootFrame() = default;
 
     // Method to get the size of the NV12 data
-    size_t getDataSize() const
-    {
-        return nv12Data.size();
-    }
+    size_t getDataSize() const { return nv12Data.size(); }
 
-    ZRootFrame clone() const
-    {
-        return *this;
-    }
+    ZRootFrame clone() const { return *this; }
 };
 
-#endif // ZROOTFRAME_H
+#endif  // ZROOTFRAME_H

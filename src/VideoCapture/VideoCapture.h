@@ -1,27 +1,27 @@
 #ifndef VIDEOCAPTURE_H
 #define VIDEOCAPTURE_H
 
+#include <stdio.h>
+
 #include <QImage>
 #include <algorithm>
-#include <stdio.h>
 #include <cstring>
 #include <vector>
-#include "./../Struct/ZRootFrame.h"
-#include "./../Struct/ZEncodedFrame.h"
-#include "./../Struct/ZVideoFrame.h"
 
-class VideoCapture
-{
-public:
-    class Callback
-    {
-    public:
+#include "./../Common/ZEncodedFrame.h"
+#include "./../Common/ZRootFrame.h"
+#include "./../Common/ZVideoFrame.h"
+
+class VideoCapture {
+  public:
+    class Callback {
+      public:
         virtual void onNewVideoFrameRawFormat(const ZRootFrame &frame) = 0;
         virtual void onShowInfoCapture(int width, int height, int fps) = 0;
     };
 
-public:
-    VideoCapture(){};
+  public:
+    VideoCapture() {};
     virtual ~VideoCapture() = default;
 
     void registerCallback(Callback *callback);
@@ -30,7 +30,7 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
 
-protected:
+  protected:
     Callback *_callback;
 };
 

@@ -1,14 +1,13 @@
 #ifndef THREADSAFEQUEUE_H
 #define THREADSAFEQUEUE_H
 
-#include <queue>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <queue>
 
 template <typename T>
-class ThreadSafeQueue
-{
-public:
+class ThreadSafeQueue {
+   public:
     ThreadSafeQueue() {}
     void push(const T &value);
 
@@ -24,8 +23,8 @@ public:
 
     int size() const;
 
-private:
-    mutable std::mutex mutex_; // cho phép thay đổi trong luồng có const
+   private:
+    mutable std::mutex mutex_;  // cho phép thay đổi trong luồng có const
     std::queue<T> queue_;
     std::condition_variable condVar_;
 };

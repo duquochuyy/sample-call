@@ -1,7 +1,9 @@
 #include "MainWindow.h"
+
 #include "ui_MainWindow.h"
 
-MainWindow::MainWindow(std::unique_ptr<CallController> callController, int applicationPort, QWidget *parent)
+MainWindow::MainWindow(std::unique_ptr<CallController> callController,
+                       int applicationPort, QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
       _callController(std::move(callController)),
@@ -12,56 +14,59 @@ MainWindow::MainWindow(std::unique_ptr<CallController> callController, int appli
     ui->setupUi(this);
     ui->videoFrameLabelLocal->raise();
 
-    connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onBtnStartCallClicked);
-    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onBtnStopCallClicked);
+    connect(ui->startButton, &QPushButton::clicked, this,
+            &MainWindow::onBtnStartCallClicked);
+    connect(ui->stopButton, &QPushButton::clicked, this,
+            &MainWindow::onBtnStopCallClicked);
     connect(infoTimer, &QTimer::timeout, this, &MainWindow::renderInfo);
 
     // for render camera
     _callController->setVideoFrameLabelLocal(ui->videoFrameLabelLocal);
     _callController->setVideoFrameLabelPartner(ui->videoFrameLabelPartner);
 
-    (applicationPort == 8080)
-        ? partnerPort = 8081
-        : partnerPort = 8080;
+    (applicationPort == 8080) ? partnerPort = 8081 : partnerPort = 8080;
 
     infoTimer->start(1000);
 
     // test render yuv gpu
     // Remove the old QLabel from the layout
-    // QGridLayout *gridLayout = qobject_cast<QGridLayout *>(ui->centralwidget->layout());
-    // if (gridLayout)
+    // QGridLayout *gridLayout = qobject_cast<QGridLayout
+    // *>(ui->centralwidget->layout()); if (gridLayout)
     // {
     //     int row, column, rowSpan, columnSpan;
-    //     gridLayout->getItemPosition(gridLayout->indexOf(ui->videoFrameLabelPartner), &row, &column, &rowSpan, &columnSpan);
+    //     gridLayout->getItemPosition(gridLayout->indexOf(ui->videoFrameLabelPartner),
+    //     &row, &column, &rowSpan, &columnSpan);
     //     gridLayout->removeWidget(ui->videoFrameLabelPartner);
     //     delete ui->videoFrameLabelPartner;
-    //     gridLayout->addWidget(videoDisplay, row, column, rowSpan, columnSpan);
+    //     gridLayout->addWidget(videoDisplay, row, column, rowSpan,
+    //     columnSpan);
     // }
     // qDebug() << "YuvWidget initial size:" << videoDisplay->size();
     // _callController->setVideoFrameLabelYUV420(videoDisplay);
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete ui;
     // delete videoDisplay;
 }
 
-void MainWindow::renderInfo()
-{
+void MainWindow::renderInfo() {
     auto labelRender = _callController->getLabelRender();
     // Capture
     ui->labelCaptureWidth->setText(QString::number(labelRender->captureWidth));
-    ui->labelCaptureHeight->setText(QString::number(labelRender->captureHeight));
+    ui->labelCaptureHeight->setText(
+        QString::number(labelRender->captureHeight));
     ui->labelCaptureFps->setText(QString::number(labelRender->captureFps));
-    ui->labelLocalConvertTime->setText(QString::number(labelRender->localConvertTime));
+    ui->labelLocalConvertTime->setText(
+        QString::number(labelRender->localConvertTime));
     ui->labelLocalFps->setText(QString::number(labelRender->localFps));
 
     // Encode
     ui->labelEncodeWidth->setText(QString::number(labelRender->encodeWidth));
     ui->labelEncodeHeight->setText(QString::number(labelRender->encodeHeight));
     ui->labelEncodeFps->setText(QString::number(labelRender->encodeFps));
-    ui->labelEncodeConvertTime->setText(QString::number(labelRender->encodeConvertTime));
+    ui->labelEncodeConvertTime->setText(
+        QString::number(labelRender->encodeConvertTime));
     ui->labelEncodeTime->setText(QString::number(labelRender->encodeTime));
 
     // Send
@@ -72,7 +77,8 @@ void MainWindow::renderInfo()
     // Receive
     ui->labelReceiveFps->setText(QString::number(labelRender->receiveFps));
     ui->labelReceivePps->setText(QString::number(labelRender->receivePps));
-    ui->labelReceiveBitrate->setText(QString::number(labelRender->receiveBitrate));
+    ui->labelReceiveBitrate->setText(
+        QString::number(labelRender->receiveBitrate));
 
     // Decode
     ui->labelDecodeWidth->setText(QString::number(labelRender->decodeWidth));
@@ -82,18 +88,18 @@ void MainWindow::renderInfo()
 
     // Partner render
     ui->labelPartnerFps->setText(QString::number(labelRender->partnerFps));
-    ui->labelPartnerConvertTime->setText(QString::number(labelRender->partConvertTime));
-    // qDebug() << "time convert + encode" << labelRender->encodeConvertTime + labelRender->encodeTime;
+    ui->labelPartnerConvertTime->setText(
+        QString::number(labelRender->partConvertTime));
+    // qDebug() << "time convert + encode" << labelRender->encodeConvertTime +
+    // labelRender->encodeTime;
 }
 
-void MainWindow::onBtnStartCallClicked()
-{
+void MainWindow::onBtnStartCallClicked() {
     qDebug() << "onBtnStartCallClicked";
     _callController->startCall("127.0.0.1", partnerPort);
 }
 
-void MainWindow::onBtnStopCallClicked()
-{
+void MainWindow::onBtnStopCallClicked() {
     qDebug() << "onBtnStopCallClicked";
     _callController->stopCall();
 }

@@ -1,21 +1,21 @@
 #ifndef PARTNERVIDEORENDER_H
 #define PARTNERVIDEORENDER_H
 
-#include "./VideoRender.h"
 #include <mutex>
 
-class PartnerVideoRender : public VideoRender
-{
-public:
+#include "./VideoRender.h"
+
+class PartnerVideoRender : public VideoRender {
+   public:
     PartnerVideoRender();
     ~PartnerVideoRender();
     void setVideoFrameLabel(QLabel *&label) override;
     void render(const QImage &image) override;
 
-private:
+   private:
     void getInfo(int width, int height);
 
-private:
+   private:
     QLabel *_label;
     std::mutex fileMutex;
 

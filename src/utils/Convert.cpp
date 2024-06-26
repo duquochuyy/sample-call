@@ -1,7 +1,8 @@
 #include "./Convert.h"
 
-void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data, int width, int height, std::vector<uchar> &yuv420pData)
-{
+void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data,
+                                       int width, int height,
+                                       std::vector<uchar> &yuv420pData) {
     int frameSize = width * height;
     int yuv420pSize = frameSize + frameSize / 2;
     yuv420pData.resize(yuv420pSize);
@@ -19,15 +20,14 @@ void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data, int w
     int uvHeight = height / 2;
     int uvSize = uvWidth * uvHeight;
 
-    for (int i = 0; i < uvSize; ++i)
-    {
+    for (int i = 0; i < uvSize; ++i) {
         uPlane[i] = uvPlane[i * 2];
         vPlane[i] = uvPlane[i * 2 + 1];
     }
 }
 
-void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data, int width, int height, QImage &image)
-{
+void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data,
+                                    int width, int height, QImage &image) {
     int frameSize = width * height;
     const uchar *yPlane = nv12Data.data();
     const uchar *uvPlane = nv12Data.data() + frameSize;
@@ -35,10 +35,8 @@ void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data, int widt
     // Convert to RGB
     image = QImage(width, height, QImage::Format_RGB32);
 
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
             int yIndex = y * width + x;
             int uvIndex = (y / 2) * width + (x & ~1);
 
@@ -65,10 +63,9 @@ void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data, int widt
     }
 }
 
-void Convert::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width, int height, QImage &image)
-{
-    if (yuv420Data.empty())
-    {
+void Convert::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data,
+                                 int width, int height, QImage &image) {
+    if (yuv420Data.empty()) {
         qDebug() << "Null yuv420Data pointer.";
         return;
     }
@@ -79,10 +76,8 @@ void Convert::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data, int width
     const uchar *vPlane = uPlane + (frameSize / 4);
     image = QImage(width, height, QImage::Format_RGB32);
 
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
             int yIndex = y * width + x;
             int uvIndex = (y / 2) * (width / 2) + (x / 2);
 

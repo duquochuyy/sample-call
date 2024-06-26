@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../../src/VideoRender/Shaders/yuvVertex.glsl</file>
+        <file>../../src/VideoRender/Shaders/yuvFragment.glsl</file>
+    </qresource>
+</RCC>

@@ -1,31 +1,26 @@
 #include "./TimeTracker.h"
 
-TimeTracker::TimeTracker() : totalTime(0), callCount(0), startTime(std::chrono::steady_clock::now()) {}
+TimeTracker::TimeTracker()
+    : totalTime(0), callCount(0), startTime(std::chrono::steady_clock::now()) {}
 
-TimeTracker::~TimeTracker()
-{
-}
+TimeTracker::~TimeTracker() {}
 
-void TimeTracker::start()
-{
-    startPoint = std::chrono::steady_clock::now();
-}
+void TimeTracker::start() { startPoint = std::chrono::steady_clock::now(); }
 
-void TimeTracker::stop()
-{
+void TimeTracker::stop() {
     auto end = std::chrono::steady_clock::now();
     std::lock_guard<std::mutex> lock(mtx);
-    totalTime += std::chrono::duration<double, std::milli>(end - startPoint).count();
+    totalTime +=
+        std::chrono::duration<double, std::milli>(end - startPoint).count();
     callCount++;
 }
 
-double TimeTracker::getAverageTime()
-{
+double TimeTracker::getAverageTime() {
     std::lock_guard<std::mutex> lock(mtx);
     auto now = std::chrono::steady_clock::now();
-    double elapsedSeconds = std::chrono::duration<double>(now - startTime).count();
-    if (elapsedSeconds >= 1.0)
-    {
+    double elapsedSeconds =
+        std::chrono::duration<double>(now - startTime).count();
+    if (elapsedSeconds >= 1.0) {
         double averageTime = (callCount > 0) ? (totalTime / callCount) : 0.0;
         // Reset tracker sau 1 giây
         totalTime = 0;

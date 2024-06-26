@@ -1,16 +1,17 @@
 #ifndef ENCODEFRAME_H
 #define ENCODEFRAME_H
 
-#include <QDebug>
 #include <stdint.h>
+
+#include <QDebug>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "x264.h"
-#include "./../VideoCapture/VideoCapture.h"
 
-extern "C"
-{
+#include "./../VideoCapture/VideoCapture.h"
+#include "x264.h"
+
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
@@ -18,27 +19,26 @@ extern "C"
 
 #define TIMEBASE 90000
 
-class EncodeFrame
-{
-public:
-    class Callback
-    {
-    public:
+class EncodeFrame {
+   public:
+    class Callback {
+       public:
         virtual void onShowInfoEncode(int width, int height, int fps) = 0;
     };
 
-public:
+   public:
     EncodeFrame(int width = 1280, int height = 720);
     ~EncodeFrame();
 
     void registerCallback(Callback *callback);
 
-    void encodeYUV420ToH264(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame);
+    void encodeYUV420ToH264(const ZVideoFrame &frame,
+                            ZEncodedFrame &encodedFrame);
 
-private:
+   private:
     void getInfo(int width, int height);
 
-private:
+   private:
     Callback *_callback;
     int _width;
     int _height;
