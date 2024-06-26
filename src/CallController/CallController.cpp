@@ -44,17 +44,6 @@ void CallController::onNewVideoFrameRawFormat(const ZRootFrame &frame) {
         convertRawDataQueue.push(framePtr);
 }
 
-void CallController::onReceiveFrame(ZEncodedFrame &encodedFrame) {
-    // ZVideoFrame decodedFrame;
-    // _decodeFrame->decodeH264ToYUV420(encodedFrame.encodedData,
-    // encodedFrame.timestamp, decodedFrame); QImage imagePartner;
-    // Utils::convertYUV420ToRGB(decodedFrame.yuv420pData, decodedFrame.width,
-    // decodedFrame.height, imagePartner); _partnerRender->render(imagePartner);
-
-    // auto framePtr = std::make_shared<ZEncodedFrame>(std::move(encodedFrame));
-    // decodeQueue.push(framePtr);
-}
-
 void CallController::onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
                                         uint64_t timestamp) {
     auto framePtr = std::make_shared<ZEncodedFrame>(std::move(fullFrameData),

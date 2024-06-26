@@ -37,7 +37,7 @@ SOURCES += \
     $$ROOT_DIR/src/Network/NetworkSender.cpp \
     $$ROOT_DIR/src/Codec/EncodeFrame.cpp \
     $$ROOT_DIR/src/Codec/DecodeFrame.cpp \
-    $$ROOT_DIR/src/Utils/utils.cpp \
+    $$ROOT_DIR/src/Utils/Utils.cpp \
     $$ROOT_DIR/src/Utils/TimeTracker.cpp \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.cpp \
     $$ROOT_DIR/src/Utils/Convert.cpp \
@@ -56,7 +56,7 @@ HEADERS += \
     $$ROOT_DIR/src/Network/NetworkSender.h \
     $$ROOT_DIR/src/Codec/EncodeFrame.h \
     $$ROOT_DIR/src/Codec/DecodeFrame.h \
-    $$ROOT_DIR/src/Utils/utils.h \
+    $$ROOT_DIR/src/Utils/Utils.h \
     $$ROOT_DIR/src/Utils/TimeTracker.h \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.h \
     $$ROOT_DIR/src/Utils/Convert.h \

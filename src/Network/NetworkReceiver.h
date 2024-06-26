@@ -24,33 +24,32 @@
 #define PACKER_SIZE 1024
 
 class NetworkReceiver {
-  public:
+   public:
     class Callback {
-      public:
+       public:
         virtual void onAcceptedConnection(std::string partnerIP,
                                           int partnerPort) = 0;
-        virtual void onReceiveFrame(ZEncodedFrame &encodedFrame) = 0;
         virtual void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
                                         uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
         virtual void onShowInfoReceive(int fps, int pps, double bitrate) = 0;
     };
 
-  public:
+   public:
     NetworkReceiver(int port);
     ~NetworkReceiver();
     void registerCallback(Callback *callback);
     void startListening();
     void disconnect();
 
-  private:
+   private:
     void handleRequestConnect();
     void receiveData();
     void handleConnectBack(int partnerPort);
     void handleRequestDisconnect();
     void getInfo();
 
-  private:
+   private:
     Callback *_callback;
 
     int _port;

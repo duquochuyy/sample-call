@@ -3,7 +3,7 @@
 
 #include <QLabel>
 
-struct ZLabelRender {
+struct ZValueInfo {
     // capture
     int captureWidth;
     int captureHeight;
@@ -36,13 +36,13 @@ struct ZLabelRender {
     int partnerFps;
     int partConvertTime;
 
-    ZLabelRender() {}
-    ZLabelRender(int cWidth, int cHeight, int cFps, int lConvertTime, int lFps,
-                 int eWidth, int eHeight, int eFps, int eConvertTime, int eTime,
-                 int sTime, int sFps, int sPps, double sBitrate, int rFps,
-                 int rPps, double rBitrate, int dWidth, int dHeight, int dFps,
-                 int dConvertTime, int dTime, int dScaleTime, int pFps,
-                 int pConvertTime)
+    ZValueInfo() {}
+    ZValueInfo(int cWidth, int cHeight, int cFps, int lConvertTime, int lFps,
+               int eWidth, int eHeight, int eFps, int eConvertTime, int eTime,
+               int sTime, int sFps, int sPps, double sBitrate, int rFps,
+               int rPps, double rBitrate, int dWidth, int dHeight, int dFps,
+               int dConvertTime, int dTime, int dScaleTime, int pFps,
+               int pConvertTime)
         : captureWidth(cWidth),
           captureHeight(cHeight),
           captureFps(cFps),

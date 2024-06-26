@@ -8,16 +8,9 @@
 #include <iostream>
 #include <string>
 
+#include "./../Utils/Define.h"
 #include "./../VideoCapture/VideoCapture.h"
 #include "x264.h"
-
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/opt.h>
-}
-
-#define TIMEBASE 90000
 
 class EncodeFrame {
    public:
@@ -27,7 +20,7 @@ class EncodeFrame {
     };
 
    public:
-    EncodeFrame(int width = 1280, int height = 720);
+    EncodeFrame(int width = WIDTH, int height = HEIGHT);
     ~EncodeFrame();
 
     void registerCallback(Callback *callback);
@@ -47,12 +40,6 @@ class EncodeFrame {
     x264_param_t param;
     x264_picture_t pic;
     x264_picture_t pic_out;
-
-    // test decode
-    const AVCodec *codec;
-    AVCodecContext *codecContext;
-    AVFrame *frame;
-    AVPacket *packet;
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;

@@ -10,25 +10,22 @@
 #include "./../Codec/DecodeFrame.h"
 #include "./../Codec/EncodeFrame.h"
 #include "./../Common/ZEncodedFrame.h"
-#include "./../Common/ZLabelRender.h"
 #include "./../Common/ZRootFrame.h"
+#include "./../Common/ZValueInfo.h"
 #include "./../Common/ZVideoFrame.h"
 #include "./../Network/NetworkReceiver.h"
 #include "./../Network/NetworkSender.h"
+#include "./../Utils/Convert.h"
+#include "./../Utils/Define.h"
+#include "./../Utils/ThreadSafeQueue.h"
+#include "./../Utils/TimeTracker.h"
+#include "./../Utils/YuvWidget.h"
 #include "./../VideoCapture/QtVideoCapture.h"
 #include "./../VideoCapture/QtVideoSurface.h"
 #include "./../VideoCapture/VideoCapture.h"
 #include "./../VideoRender/PartnerVideoRender.h"
 #include "./../VideoRender/QtVideoRender.h"
 #include "./../VideoRender/VideoRender.h"
-#include "./../utils/Convert.h"
-#include "./../utils/ThreadSafeQueue.h"
-#include "./../utils/TimeTracker.h"
-#include "./../utils/YuvWidget.h"
-
-#define WIDTH 1280
-#define HEIGHT 720
-#define FPS 30
 
 class CallController : public VideoCapture::Callback,
                        public VideoRender::Callback,
@@ -36,7 +33,7 @@ class CallController : public VideoCapture::Callback,
                        public NetworkSender::Callback,
                        public EncodeFrame::Callback,
                        public DecodeFrame::Callback {
-  public:
+   public:
     CallController(int port = 8080);
     ~CallController();
     // for capture
@@ -48,7 +45,6 @@ class CallController : public VideoCapture::Callback,
     void setVideoFrameLabelYUV420(YuvWidget *&label);
 
     // for receive
-    void onReceiveFrame(ZEncodedFrame &encodedFrame) override;
     void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
                             uint64_t timestamp) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
@@ -57,27 +53,27 @@ class CallController : public VideoCapture::Callback,
     // for send
 
     // for log info
-    void onShowInfoCapture(int width, int height, int fps) override; // capture
-    void onShowInfoLocalFps(int fps) override;                       // local
-    void onShowInfoEncode(int width, int height, int fps) override;  // encode
-    void onShowInfoSend(int fps, int pps, double bitrate) override;  // send
-    void onShowInfoReceive(int fps, int pps, double bitrate) override; // send
-    void onShowInfoDecode(int width, int height, int fps) override;    // decode
-    void onShowInfoPartnerFps(int fps) override; // partner fps
+    void onShowInfoCapture(int width, int height, int fps) override;  // capture
+    void onShowInfoLocalFps(int fps) override;                        // local
+    void onShowInfoEncode(int width, int height, int fps) override;   // encode
+    void onShowInfoSend(int fps, int pps, double bitrate) override;   // send
+    void onShowInfoReceive(int fps, int pps, double bitrate) override;  // send
+    void onShowInfoDecode(int width, int height, int fps) override;  // decode
+    void onShowInfoPartnerFps(int fps) override;  // partner fps
 
-  public:
+   public:
     void startCall(std::string partnerIP, int partnerPort);
     void stopCall();
-    std::shared_ptr<ZLabelRender> getLabelRender() const;
+    std::shared_ptr<ZValueInfo> getLabelRender() const;
 
-  private:
+   private:
     void processConvertRenderLocal();
     void processConvertRawData();
     void processEncodeSend();
     void processDecodeRender();
     void processConvertPartnerThread();
 
-  private:
+   private:
     std::shared_ptr<VideoCapture> _vidCapture;
     std::shared_ptr<VideoRender> _localRender;
     std::shared_ptr<VideoRender> _partnerRender;
@@ -90,7 +86,7 @@ class CallController : public VideoCapture::Callback,
     std::atomic<bool> connectedPartner;
     int applicationPort;
     // for render ui
-    std::shared_ptr<ZLabelRender> _labelRender;
+    std::shared_ptr<ZValueInfo> _labelRender;
     // for tracker time process
     TimeTracker processLocalConvertTime;
     TimeTracker processEncodeConvertTime;
@@ -100,17 +96,17 @@ class CallController : public VideoCapture::Callback,
     TimeTracker processPartnerConvertTime;
     // for queue frame
     ThreadSafeQueue<std::shared_ptr<ZRootFrame>>
-        localQueue; // for convert local NV12 -> RGB
+        localQueue;  // for convert local NV12 -> RGB
     ThreadSafeQueue<std::shared_ptr<ZRootFrame>>
-        convertRawDataQueue; // for convert to send NV12 -> YUV420
+        convertRawDataQueue;  // for convert to send NV12 -> YUV420
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
-        encodeQueue; // for encode to send
+        encodeQueue;  // for encode to send
     ThreadSafeQueue<std::shared_ptr<ZEncodedFrame>>
-        decodeQueue; // for decode partner
+        decodeQueue;  // for decode partner
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
-        convertPartnerQueue; // for convert to render partner
-                             // test render yuv gpu
-                             // YuvWidget *_partnerRenderWidget = nullptr;
+        convertPartnerQueue;  // for convert to render partner
+                              // test render yuv gpu
+                              // YuvWidget *_partnerRenderWidget = nullptr;
 };
 
 #endif
