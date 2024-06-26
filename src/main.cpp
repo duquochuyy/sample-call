@@ -19,13 +19,6 @@ extern "C" {
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
-    // QSurfaceFormat format;
-    // format.setDepthBufferSize(24);
-    // format.setStencilBufferSize(8);
-    // format.setVersion(3, 3);                        // Request OpenGL
-    // version 3.3 format.setProfile(QSurfaceFormat::CoreProfile); // Core
-    // Profile QSurfaceFormat::setDefaultFormat(format);
-
     int port = 8080;
     if (argc > 1) {
         port = std::stoi(argv[1]);
