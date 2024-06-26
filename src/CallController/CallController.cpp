@@ -198,12 +198,12 @@ void CallController::processConvertPartnerThread()
         //                           Q_ARG(int, framePtr->height));
         // std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(1));
 
-        // processPartnerConvertTime.stop();
-        // double partnerConvertTime = processPartnerConvertTime.getAverageTime();
-        // if (partnerConvertTime != -1)
-        // {
-        //     _labelRender->partConvertTime = partnerConvertTime;
-        // }
+        processPartnerConvertTime.stop();
+        double partnerConvertTime = processPartnerConvertTime.getAverageTime();
+        if (partnerConvertTime != -1)
+        {
+            _labelRender->partConvertTime = partnerConvertTime;
+        }
     }
 }
 
