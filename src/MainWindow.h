@@ -3,9 +3,11 @@
 
 #include <QMainWindow>
 #include "./CallController/CallController.h"
+#include "./Utils/YuvWidget.h"
 #include <memory>
-#include <qDebug>
+#include <QDebug>
 #include <QTimer>
+#include <QLayout>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -30,6 +32,7 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
+    // YuvWidget *videoDisplay;
     std::unique_ptr<CallController> _callController;
     int applicationPort;
     int partnerPort;

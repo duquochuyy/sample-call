@@ -1,6 +1,6 @@
 #include "./CallController.h"
 
-CallController::CallController(int port) : applicationPort(port), _labelRender(std::make_shared<ZLabelRender>()), hasNewFrameCaptured(false), hasReceiveNewFrame(false), connectedPartner(false)
+CallController::CallController(int port) : applicationPort(port), _labelRender(std::make_shared<ZLabelRender>()), connectedPartner(false)
 {
     _vidCapture.reset(new QtVideoCapture());
     _vidCapture->registerCallback(this);
@@ -23,17 +23,13 @@ CallController::CallController(int port) : applicationPort(port), _labelRender(s
     _decodeFrame.reset(new DecodeFrame(WIDTH, HEIGHT));
     _decodeFrame->registerCallback(this);
 
+    _convert.reset(new Convert());
+
     _vidCapture->start();
 
-    convertRenderLocalThread = std::thread([this]()
-                                           { processConvertRenderLocal(); });
-    convertRenderLocalThread.detach();
-
-    // for test
-    startTime = std::chrono::steady_clock::now();
-    startTime2 = std::chrono::steady_clock::now();
-    frameCount = 0;
-    frameCount2 = 0;
+    std::thread([this]()
+                { processConvertRenderLocal(); })
+        .detach();
 }
 
 CallController::~CallController()
@@ -83,7 +79,7 @@ void CallController::processConvertRenderLocal()
         processLocalConvertTime.start();
         // convert -> render local
         QImage imageLocal;
-        Utils::processNV12DatatToRGB(framePtr->nv12Data, framePtr->width, framePtr->height, imageLocal);
+        _convert->processNV12DatatToRGB(framePtr->nv12Data, framePtr->width, framePtr->height, imageLocal);
         _localRender->render(imageLocal);
 
         processLocalConvertTime.stop();
@@ -110,7 +106,7 @@ void CallController::processConvertRawData()
         processEncodeConvertTime.start();
         // convert nv12 -> yuv420 frame to encode
         std::vector<uchar> yuv420pData;
-        Utils::processNV12DatatToYUV420(framePtr.get()->nv12Data, framePtr.get()->width, framePtr.get()->height, yuv420pData);
+        _convert->processNV12DatatToYUV420(framePtr.get()->nv12Data, framePtr.get()->width, framePtr.get()->height, yuv420pData);
         std::shared_ptr<ZVideoFrame> frame = std::make_shared<ZVideoFrame>(std::move(yuv420pData), framePtr->width, framePtr->height, framePtr->timestamp);
         processEncodeConvertTime.stop();
         double encodeConvertTime = processEncodeConvertTime.getAverageTime();
@@ -146,32 +142,6 @@ void CallController::processEncodeSend()
         }
 
         _networkSender->addNewEncodedFrame(encodedFrame);
-
-        // // test decode local
-        // processDecodeTime.start();
-        // // decode -> yuv420
-        // qDebug() << encodedFrame.timestamp << encodedFrame.encodedData.size();
-        // ZVideoFrame decodedFrame;
-        // _decodeFrame->decodeH264ToYUV420(encodedFrame.encodedData, encodedFrame.timestamp, decodedFrame);
-        // qDebug() << decodedFrame.timestamp << decodedFrame.yuv420pData.size();
-        // processDecodeTime.stop();
-        // double decodeTime = processDecodeTime.getAverageTime();
-        // if (decodeTime != -1)
-        // {
-        //     _labelRender->decodeTime = decodeTime;
-        // }
-
-        // processPartnerConvertTime.start();
-        // // convert to render partner
-        // QImage imagePartner;
-        // Utils::convertYUV420ToRGB(decodedFrame.yuv420pData, decodedFrame.width, decodedFrame.height, imagePartner);
-        // _partnerRender->render(imagePartner);
-        // processPartnerConvertTime.stop();
-        // double partnerConvertTime = processPartnerConvertTime.getAverageTime();
-        // if (partnerConvertTime != -1)
-        // {
-        //     _labelRender->partConvertTime = partnerConvertTime;
-        // }
     }
 }
 
@@ -189,7 +159,6 @@ void CallController::processDecodeRender()
 
         processDecodeTime.start();
         // decode -> yuv420
-        qDebug() << framePtr.get()->timestamp << framePtr.get()->encodedData.size();
         std::shared_ptr<ZVideoFrame> decodedFrame = std::make_shared<ZVideoFrame>();
         _decodeFrame->decodeH264ToYUV420(framePtr.get()->encodedData, framePtr.get()->timestamp, decodedFrame);
         processDecodeTime.stop();
@@ -215,17 +184,26 @@ void CallController::processConvertPartnerThread()
         }
 
         processPartnerConvertTime.start();
+
         // convert to render partner
         QImage imagePartner;
-        Utils::convertYUV420ToRGB(framePtr.get()->yuv420pData, framePtr.get()->width, framePtr.get()->height, imagePartner);
-        qDebug() << "Địa chỉ của imagePartner:" << &imagePartner;
+        _convert->convertYUV420ToRGB(framePtr.get()->yuv420pData, framePtr.get()->width, framePtr.get()->height, imagePartner);
         _partnerRender->render(imagePartner);
-        processPartnerConvertTime.stop();
-        double partnerConvertTime = processPartnerConvertTime.getAverageTime();
-        if (partnerConvertTime != -1)
-        {
-            _labelRender->partConvertTime = partnerConvertTime;
-        }
+
+        // test render yuv gpu
+        // QByteArray yuvData(reinterpret_cast<const char *>(framePtr->yuv420pData.data()), static_cast<int>(framePtr->yuv420pData.size()));
+        // QMetaObject::invokeMethod(_partnerRenderWidget, "setFrameData", Qt::AutoConnection,
+        //                           Q_ARG(QByteArray, yuvData),
+        //                           Q_ARG(int, framePtr->width),
+        //                           Q_ARG(int, framePtr->height));
+        // std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(1));
+
+        // processPartnerConvertTime.stop();
+        // double partnerConvertTime = processPartnerConvertTime.getAverageTime();
+        // if (partnerConvertTime != -1)
+        // {
+        //     _labelRender->partConvertTime = partnerConvertTime;
+        // }
     }
 }
 
@@ -243,10 +221,6 @@ void CallController::onRequestDisconnect()
     stopCall();
 }
 
-void CallController::onStateChanged()
-{
-}
-
 void CallController::setVideoFrameLabelLocal(QLabel *&label)
 {
     _localRender->setVideoFrameLabel(label);
@@ -255,6 +229,11 @@ void CallController::setVideoFrameLabelLocal(QLabel *&label)
 void CallController::setVideoFrameLabelPartner(QLabel *&label)
 {
     _partnerRender->setVideoFrameLabel(label);
+}
+
+void CallController::setVideoFrameLabelYUV420(YuvWidget *&label)
+{
+    // _partnerRenderWidget = label;
 }
 
 void CallController::startCall(std::string partnerIP, int partnerPort)

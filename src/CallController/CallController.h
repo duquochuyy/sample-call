@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <vector>
 #include <thread>
+#include <QByteArray>
 
 #include "./../VideoCapture/QtVideoCapture.h"
 #include "./../VideoCapture/QtVideoSurface.h"
@@ -16,9 +17,11 @@
 #include "./../Network/NetworkSender.h"
 #include "./../Codec/EncodeFrame.h"
 #include "./../Codec/DecodeFrame.h"
-#include "./../utils/utils.h"
+
 #include "./../utils/TimeTracker.h"
 #include "./../utils/ThreadSafeQueue.h"
+#include "./../utils/Convert.h"
+#include "./../utils/YuvWidget.h"
 
 #include "./../Struct/ZRootFrame.h"
 #include "./../Struct/ZEncodedFrame.h"
@@ -43,9 +46,9 @@ public:
     void onNewVideoFrameRawFormat(const ZRootFrame &frame) override;
 
     // for render
-    void onStateChanged() override;
     void setVideoFrameLabelLocal(QLabel *&label);
     void setVideoFrameLabelPartner(QLabel *&label);
+    void setVideoFrameLabelYUV420(YuvWidget *&label);
 
     // for receive
     void onReceiveFrame(ZEncodedFrame &encodedFrame) override;
@@ -84,24 +87,10 @@ private:
     std::shared_ptr<NetworkReceiver> _networkReceiver;
     std::shared_ptr<EncodeFrame> _encodeFrame;
     std::shared_ptr<DecodeFrame> _decodeFrame;
+    std::shared_ptr<Convert> _convert;
     // is calling to partner
     std::atomic<bool> connectedPartner;
     int applicationPort;
-    // for thread encode and decode
-    std::mutex _decodeMutex;
-    std::mutex _copyEncodeMutex;
-    std::mutex _encodeMutex;
-    std::thread convertRenderLocalThread;
-    std::thread convertRawDataThread;
-    std::thread encodeSendThread;
-    std::thread decodeRenderThread;
-    std::thread convertPartnerThread;
-    // for encode & send
-    ZRootFrame currentRawFrame;
-    std::atomic<bool> hasNewFrameCaptured;
-    // for receive & render
-    ZEncodedFrame currentEncodedFrame;
-    std::atomic<bool> hasReceiveNewFrame;
     // for render ui
     std::shared_ptr<ZLabelRender> _labelRender;
     // for tracker time process
@@ -117,12 +106,8 @@ private:
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>> encodeQueue;         // for encode to send
     ThreadSafeQueue<std::shared_ptr<ZEncodedFrame>> decodeQueue;       // for decode partner
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>> convertPartnerQueue; // for convert to render partner
-    // for test
-    std::atomic<int> frameCount;
-    std::atomic<int> frameCount2;
-    std::chrono::time_point<std::chrono::steady_clock> startTime;
-    std::chrono::time_point<std::chrono::steady_clock> startTime2;
-    TimeTracker testTracker;
+    // test render yuv gpu
+    // YuvWidget *_partnerRenderWidget = nullptr;
 };
 
 #endif

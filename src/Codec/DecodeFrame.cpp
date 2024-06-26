@@ -57,8 +57,6 @@ void DecodeFrame::registerCallback(Callback *callback)
 
 void DecodeFrame::decodeH264ToYUV420(const std::vector<uchar> &encodedData, const uint64_t timestamp, std::shared_ptr<ZVideoFrame> &decodedFrame)
 {
-    qDebug() << "before decode" << timestamp << encodedData.size();
-
     if (encodedData.empty())
     {
         qDebug() << "Encoded data is empty";
@@ -105,7 +103,6 @@ void DecodeFrame::decodeH264ToYUV420(const std::vector<uchar> &encodedData, cons
     std::memcpy(decodedFrame.get()->yuv420pData.data() + y_size, frame->data[1], uv_size);           // Copy U plane
     std::memcpy(decodedFrame.get()->yuv420pData.data() + y_size + uv_size, frame->data[2], uv_size); // Copy V plane
     getInfo(frame->width, frame->height);
-    qDebug() << "after decode" << decodedFrame.get()->timestamp << decodedFrame.get()->yuv420pData.size();
 }
 
 void DecodeFrame::getInfo(int width, int height)

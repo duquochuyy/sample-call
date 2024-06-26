@@ -143,7 +143,7 @@ void NetworkSender::getInfo()
     {
         int fps = frameCount.load() / elapsedSeconds.count();
         int pps = packetCount.load() / elapsedSeconds.count();
-        double bandwidth = (totalBytesSent / elapsedSeconds.count()) / 125000.0;
+        double bandwidth = std::round((totalBytesSent / elapsedSeconds.count()) / 125000.0 * 1000.0) / 1000.0;
         frameCount = 0;
         packetCount = 0;
         totalBytesSent = 0;

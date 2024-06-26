@@ -1,7 +1,7 @@
 #ifndef NETWORKRECEIVER_H
 #define NETWORKRECEIVER_H
 
-#include <qDebug>
+#include <QDebug>
 #include <QLabel>
 #include <unistd.h>
 #include <stdio.h>

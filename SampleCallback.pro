@@ -1,4 +1,4 @@
-QT       += core gui widgets multimedia multimediawidgets network
+QT       += core gui widgets multimedia multimediawidgets network opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -38,6 +38,8 @@ SOURCES += \
     src/utils/utils.cpp \
     src/utils/TimeTracker.cpp \
     src/utils/ThreadSafeQueue.cpp \
+    src/utils/Convert.cpp \
+    src/utils/YuvWidget.cpp \
     src/MainWindow.cpp
 
 HEADERS += \
@@ -55,10 +57,15 @@ HEADERS += \
     src/utils/utils.h \
     src/utils/TimeTracker.h \
     src/utils/ThreadSafeQueue.h \
+    src/utils/Convert.h \
+    src/utils/YuvWidget.h \
     src/MainWindow.h
 
 FORMS += \
     src/View/MainWindow.ui
+
+RESOURCES += \
+    resources.qrc
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

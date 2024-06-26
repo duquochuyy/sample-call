@@ -1,7 +1,7 @@
 #ifndef VIDEORENDER_H
 #define VIDEORENDER_H
 
-#include <qDebug>
+#include <QDebug>
 #include <QImage>
 #include <QLabel>
 #include <QPixmap>
@@ -14,7 +14,6 @@ public:
     class Callback
     {
     public:
-        virtual void onStateChanged() = 0;
         virtual void onShowInfoLocalFps(int fps) = 0;
         virtual void onShowInfoPartnerFps(int fps) = 0;
     };

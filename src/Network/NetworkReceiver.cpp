@@ -167,11 +167,8 @@ void NetworkReceiver::receiveData()
             getInfo();
 
             qDebug() << "receive frame" << timestamp << fullFrameSize << totalPackets;
-            // ZEncodedFrame encodedFrame(std::move(fullFrameData), fullFrameSize, width, height, timestamp);
-            // qDebug() << "address receive" << &encodedFrame;
             if (_callback)
             {
-                // _callback->onReceiveFrame(encodedFrame);
                 _callback->onReceiveDataFrame(fullFrameData, timestamp);
             }
             for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
@@ -213,7 +210,7 @@ void NetworkReceiver::getInfo()
     {
         int fps = frameCount.load() / elapsedSeconds.count();
         int pps = packetCount.load() / elapsedSeconds.count();
-        double bandwidth = (totalBytesReceive / elapsedSeconds.count()) / 125000;
+        double bandwidth = std::round((totalBytesReceive / elapsedSeconds.count()) / 125000.0 * 1000.0) / 1000.0;
         frameCount = 0;
         packetCount = 0;
         totalBytesReceive = 0;

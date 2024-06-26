@@ -7,6 +7,7 @@ MainWindow::MainWindow(std::unique_ptr<CallController> callController, int appli
       _callController(std::move(callController)),
       applicationPort(applicationPort),
       infoTimer(new QTimer(this))
+//   ,videoDisplay(new YuvWidget(this))
 {
     ui->setupUi(this);
     ui->videoFrameLabelLocal->raise();
@@ -24,11 +25,26 @@ MainWindow::MainWindow(std::unique_ptr<CallController> callController, int appli
         : partnerPort = 8080;
 
     infoTimer->start(1000);
+
+    // test render yuv gpu
+    // Remove the old QLabel from the layout
+    // QGridLayout *gridLayout = qobject_cast<QGridLayout *>(ui->centralwidget->layout());
+    // if (gridLayout)
+    // {
+    //     int row, column, rowSpan, columnSpan;
+    //     gridLayout->getItemPosition(gridLayout->indexOf(ui->videoFrameLabelPartner), &row, &column, &rowSpan, &columnSpan);
+    //     gridLayout->removeWidget(ui->videoFrameLabelPartner);
+    //     delete ui->videoFrameLabelPartner;
+    //     gridLayout->addWidget(videoDisplay, row, column, rowSpan, columnSpan);
+    // }
+    // qDebug() << "YuvWidget initial size:" << videoDisplay->size();
+    // _callController->setVideoFrameLabelYUV420(videoDisplay);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    // delete videoDisplay;
 }
 
 void MainWindow::renderInfo()
@@ -47,7 +63,6 @@ void MainWindow::renderInfo()
     ui->labelEncodeFps->setText(QString::number(labelRender->encodeFps));
     ui->labelEncodeConvertTime->setText(QString::number(labelRender->encodeConvertTime));
     ui->labelEncodeTime->setText(QString::number(labelRender->encodeTime));
-    ui->labelEncodeScaleTime->setText(QString::number(labelRender->encodeScaleTime));
 
     // Send
     ui->labelSendFps->setText(QString::number(labelRender->sendFps));
@@ -63,9 +78,7 @@ void MainWindow::renderInfo()
     ui->labelDecodeWidth->setText(QString::number(labelRender->decodeWidth));
     ui->labelDecodeHeight->setText(QString::number(labelRender->decodeHeight));
     ui->labelDecodeFps->setText(QString::number(labelRender->decodeFps));
-    ui->labelDecodeConvertTime->setText(QString::number(labelRender->decodeConvertTime));
     ui->labelDecodeTime->setText(QString::number(labelRender->decodeTime));
-    ui->labelDecodeScaleTime->setText(QString::number(labelRender->decodeScaleTime));
 
     // Partner render
     ui->labelPartnerFps->setText(QString::number(labelRender->partnerFps));
@@ -76,11 +89,6 @@ void MainWindow::renderInfo()
 void MainWindow::onBtnStartCallClicked()
 {
     qDebug() << "onBtnStartCallClicked";
-    QString ipText = ui->textIP->toPlainText();
-    QString portText = ui->textPort->toPlainText();
-    // int partnerPort = portText.toInt();
-    //    int partnerPort = portText.toInt() - 1;
-    //     std::string partnerIP = ipText.toStdString();
     _callController->startCall("127.0.0.1", partnerPort);
 }
 
