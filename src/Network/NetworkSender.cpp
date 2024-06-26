@@ -1,12 +1,13 @@
 #include "./NetworkSender.h"
 
-NetworkSender::NetworkSender(int localPort) : localPort(localPort), sock(-1), isSending(false), totalBytesSent(0), frameCount(0)
+NetworkSender::NetworkSender(int localPort) : localPort(localPort), sock(-1), isSending(false), totalBytesSent(0), frameCount(0), packetCount(0)
 {
 }
 
 NetworkSender::~NetworkSender()
 {
     disconnect();
+    delete _callback;
 }
 
 void NetworkSender::registerCallback(Callback *callback)
@@ -45,13 +46,6 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port)
     return true;
 }
 
-void NetworkSender::addNewFrame(const ZVideoFrame &frame)
-{
-    const std::lock_guard<std::mutex> lock(frameMutex);
-    currentFrame = frame;
-    hasNewFrame = true;
-}
-
 void NetworkSender::addNewEncodedFrame(const ZEncodedFrame &encodedFrame)
 {
     const std::lock_guard<std::mutex> lock(encodedFrameMutex);
@@ -76,7 +70,6 @@ void NetworkSender::disconnect()
 
 void NetworkSender::sendData()
 {
-    auto frameDuration = std::chrono::duration<double, std::milli>(33.3);
     while (isSending)
     {
         if (!hasNewFrame)
@@ -87,39 +80,44 @@ void NetworkSender::sendData()
 
         const std::lock_guard<std::mutex> lock(encodedFrameMutex);
 
-        int dataSize = currentEncodedFrame.encodedData.size();
-        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
+        int dataSize = currentEncodedFrame.frameSize;
+        int headerSize = sizeof(uint64_t) + 5 * sizeof(int);
         int totalPackets = (dataSize + (PACKET_SIZE - 1) - headerSize) / (PACKET_SIZE - headerSize);
         int offset = 0;
-        qDebug() << "send data frame: " << QString::number(currentEncodedFrame.timestamp) << dataSize;
+
+        // qDebug() << " send frame: " << currentEncodedFrame.timestamp << currentEncodedFrame.frameSize << totalPackets;
+
+        auto startPacketTime = std::chrono::steady_clock::now();
+
         for (int packetId = 0; packetId < totalPackets; ++packetId)
         {
             int chunkSize = std::min(static_cast<int>(PACKET_SIZE - headerSize), dataSize - offset);
-
-            std::vector<char> packet(headerSize + chunkSize);
+            std::vector<char> packet(PACKET_SIZE);
 
             std::memcpy(packet.data(), &currentEncodedFrame.timestamp, sizeof(uint64_t));
 
-            std::memcpy(packet.data() + sizeof(uint64_t), &packetId, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t), &totalPackets, sizeof(int));
 
-            std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &totalPackets, sizeof(int));
+            std::memcpy(packet.data() + sizeof(uint64_t) + sizeof(int), &packetId, sizeof(int));
 
             std::memcpy(packet.data() + sizeof(uint64_t) + 2 * sizeof(int), &currentEncodedFrame.width, sizeof(int));
 
             std::memcpy(packet.data() + sizeof(uint64_t) + 3 * sizeof(int), &currentEncodedFrame.height, sizeof(int));
 
-            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), currentEncodedFrame.encodedData.data() + offset, chunkSize);
+            std::memcpy(packet.data() + sizeof(uint64_t) + 4 * sizeof(int), &chunkSize, sizeof(int));
+
+            std::memcpy(packet.data() + sizeof(uint64_t) + 5 * sizeof(int), currentEncodedFrame.encodedData.data() + offset, chunkSize);
 
             offset += chunkSize;
 
             send(sock, packet.data(), packet.size(), 0);
 
+            packetCount++;
+
             totalBytesSent += packet.size();
         }
 
-        // increase frame for send
-        frameCount++;
-        getInfoSend();
+        getInfo();
         hasNewFrame = false;
     }
 }
@@ -136,56 +134,22 @@ void NetworkSender::startSending()
     sendThread.detach();
 }
 
-void NetworkSender::testShowImage(uchar *yuv420pData, int width, int height)
+void NetworkSender::getInfo()
 {
-    int frameSize = width * height;
-    const uchar *yPlane = yuv420pData;
-    const uchar *uPlane = yuv420pData + frameSize;
-    const uchar *vPlane = yuv420pData + frameSize + (frameSize / 4);
-    QImage rgbImage(width, height, QImage::Format_RGB32);
-
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
-            int yIndex = y * width + x;
-            int uvIndex = (y / 2) * (width / 2) + (x / 2);
-
-            int Y = yPlane[yIndex];
-            int U = uPlane[uvIndex] - 128;
-            int V = vPlane[uvIndex] - 128;
-
-            int R = qBound(0, (int)(Y + 1.402 * V), 255);
-            int G = qBound(0, (int)(Y - 0.344136 * U - 0.714136 * V), 255);
-            int B = qBound(0, (int)(Y + 1.772 * U), 255);
-
-            rgbImage.setPixel(x, y, qRgb(R, G, B));
-        }
-    }
-    QString filename = "sende_r" + QString::number(currentFrame.timestamp) + ".jpg";
-    if (!rgbImage.save(filename))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
-}
-
-void NetworkSender::getInfoSend()
-{
+    frameCount++;
     auto currentTime = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
     if (elapsedSeconds.count() >= 1.0)
     {
         int fps = frameCount.load() / elapsedSeconds.count();
-        double bandwidth = (totalBytesSent / elapsedSeconds.count()) / 125000.0;
+        int pps = packetCount.load() / elapsedSeconds.count();
+        double bandwidth = std::round((totalBytesSent / elapsedSeconds.count()) / 125000.0 * 1000.0) / 1000.0;
         frameCount = 0;
+        packetCount = 0;
         totalBytesSent = 0;
         startTime = currentTime;
 
         if (_callback != nullptr)
-            _callback->onRenderInfoSender(currentEncodedFrame.width, currentEncodedFrame.height, fps, bandwidth);
+            _callback->onShowInfoSend(fps, pps, bandwidth);
     }
 }

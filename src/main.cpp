@@ -5,9 +5,11 @@
 #include <iostream>
 
 #include <QApplication>
+#include <QOpenGLWidget>
+#include <QOpenGLContext>
+#include <QSurfaceFormat>
 
 #include "./CallController/CallController.h"
-#include "mathlib.h"
 
 extern "C"
 {
@@ -16,35 +18,17 @@ extern "C"
 #include <libavutil/avutil.h>
 }
 
-// std::mutex fileMutex;
-
-// int getPortNumber(int basePort)
-// {
-//     std::lock_guard<std::mutex> guard(fileMutex);
-//     const char *filename = "/tmp/app_instance_count.txt";
-//     std::ifstream infile(filename);
-//     int count = 0;
-
-//     if (infile.is_open())
-//     {
-//         infile >> count;
-//         infile.close();
-//     }
-
-//     count++;
-//     std::ofstream outfile(filename);
-//     if (outfile.is_open())
-//     {
-//         outfile << count;
-//         outfile.close();
-//     }
-
-//     return basePort + count;
-// }
-
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    QSurfaceFormat format;
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    format.setVersion(3, 3);                        // Request OpenGL version 3.3
+    format.setProfile(QSurfaceFormat::CoreProfile); // Core Profile
+    QSurfaceFormat::setDefaultFormat(format);
+
     int port = 8080;
     if (argc > 1)
     {
@@ -53,8 +37,8 @@ int main(int argc, char *argv[])
     avformat_network_init();
     qDebug() << "FFmpeg version: " << av_version_info();
 
-    std::shared_ptr<CallController> _callController = std::make_shared<CallController>(port);
-    MainWindow w(_callController, port);
+    std::unique_ptr<CallController> _callController = std::make_unique<CallController>(port);
+    MainWindow w(std::move(_callController), port);
     w.show();
     return a.exec();
 }

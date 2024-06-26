@@ -3,6 +3,10 @@
 #define UTILS_H
 
 #include <chrono>
+#include <QImage>
+#include <QDebug>
+#include "./../VideoCapture/VideoCapture.h"
+#include "./../VideoCapture/QtVideoSurface.h"
 
 class Utils
 {

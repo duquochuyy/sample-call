@@ -1,6 +1,6 @@
 #include "./NetworkReceiver.h"
 
-NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1), totalBytesReceive(0), frameCount(0)
+NetworkReceiver::NetworkReceiver(int port) : _port(port), receiver_fd(-1), sender_sock(-1), totalBytesReceive(0), frameCount(0), packetCount(0)
 {
     struct sockaddr_in address;
     int opt = 1;
@@ -48,6 +48,7 @@ NetworkReceiver::~NetworkReceiver()
         close(sender_sock);
         sender_sock = -1;
     }
+    delete _callback;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback)
@@ -100,7 +101,11 @@ void NetworkReceiver::receiveData()
     while (true)
     {
         std::vector<char> buffer(PACKER_SIZE);
+
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
+
+        packetCount++;
+
         if (bytesRead <= 0)
         {
             qDebug() << "Connection closed or error occurred";
@@ -118,61 +123,59 @@ void NetworkReceiver::receiveData()
 
         totalBytesReceive += bytesRead;
 
-        // Extract timestamp
         uint64_t timestamp;
+        int totalPackets, packetId, width, height, chunkSize;
+        int headerSize = sizeof(uint64_t) + 5 * sizeof(int);
+
         std::memcpy(&timestamp, buffer.data(), sizeof(uint64_t));
         if (timestamp < newestFrameTimestamp)
             continue;
 
-        // Extract packerId
-        int packetId;
-        std::memcpy(&packetId, buffer.data() + sizeof(uint64_t), sizeof(int));
+        std::memcpy(&totalPackets, buffer.data() + sizeof(uint64_t), sizeof(int));
 
-        // Extract totalPackets
-        int totalPackets;
-        std::memcpy(&totalPackets, buffer.data() + sizeof(uint64_t) + sizeof(int), sizeof(int));
+        std::memcpy(&packetId, buffer.data() + sizeof(uint64_t) + sizeof(int), sizeof(int));
 
-        // Extract width
-        int width;
         std::memcpy(&width, buffer.data() + sizeof(uint64_t) + 2 * sizeof(int), sizeof(int));
 
-        // Extract height
-        int height;
         std::memcpy(&height, buffer.data() + sizeof(uint64_t) + 3 * sizeof(int), sizeof(int));
 
-        // Extract frame data chunk
-        int headerSize = sizeof(uint64_t) + 4 * sizeof(int);
-        std::vector<char> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + bytesRead);
+        std::memcpy(&chunkSize, buffer.data() + sizeof(uint64_t) + 4 * sizeof(int), sizeof(int));
 
-        // Store the frame data chunk
+        std::vector<uchar> frameDataChunk(buffer.begin() + headerSize, buffer.begin() + headerSize + chunkSize);
+
         bufferFrames[timestamp][packetId] = frameDataChunk;
 
-        // Check if we have received all packets for this frame
         if (bufferFrames[timestamp].size() == totalPackets)
         {
-            // Concatenate all chunks to form the complete frame data
-            std::vector<uchar> fullFrameData;
-            for (int i = 0; i < totalPackets; ++i)
+            int fullFrameSize = 0;
+            for (const auto &packet : bufferFrames[timestamp])
             {
-                auto &packet = bufferFrames[timestamp][i];
-                fullFrameData.insert(fullFrameData.end(), packet.begin(), packet.end());
+                fullFrameSize += packet.second.size();
+            }
+            std::vector<uchar> fullFrameData(fullFrameSize);
+            int offset = 0;
+            for (const auto &packet : bufferFrames[timestamp])
+            {
+                const auto &dataVector = packet.second;
+                std::memcpy(fullFrameData.data() + offset, dataVector.data(), dataVector.size());
+                offset += dataVector.size();
             }
 
             // Process the complete frame
             newestFrameTimestamp = timestamp;
             frameCount++;
-            getInfoReceive(width, height);
-            qDebug() << "receive data frame: " << QString::number(timestamp) << fullFrameData.size();
+            getInfo();
 
+            qDebug() << "receive frame" << timestamp << fullFrameSize << totalPackets;
             if (_callback)
             {
-                _callback->onReceiveFrame(fullFrameData, timestamp);
+                _callback->onReceiveDataFrame(fullFrameData, timestamp);
             }
             for (auto it = std::begin(bufferFrames); it != std::end(bufferFrames);)
             {
                 if (it->first <= newestFrameTimestamp)
                 {
-                    it = bufferFrames.erase(it); // Loại bỏ frame có timestamp nhỏ hơn hoặc bằng newestFrameTimestamp
+                    it = bufferFrames.erase(it);
                 }
                 else
                 {
@@ -199,56 +202,21 @@ void NetworkReceiver::startListening()
     listenThread.detach();
 }
 
-#include <QImage>
-void NetworkReceiver::testShowImage(const uchar *yuv420pData, int width, int height, QString fileName)
-{
-    int frameSize = width * height;
-    const uchar *yPlane = yuv420pData;
-    const uchar *uPlane = yuv420pData + frameSize;
-    const uchar *vPlane = yuv420pData + frameSize + (frameSize / 4);
-    QImage rgbImage(width, height, QImage::Format_RGB32);
-
-    for (int y = 0; y < height; ++y)
-    {
-        for (int x = 0; x < width; ++x)
-        {
-            int yIndex = y * width + x;
-            int uvIndex = (y / 2) * (width / 2) + (x / 2);
-
-            int Y = yPlane[yIndex];
-            int U = uPlane[uvIndex] - 128;
-            int V = vPlane[uvIndex] - 128;
-
-            int R = qBound(0, (int)(Y + 1.402 * V), 255);
-            int G = qBound(0, (int)(Y - 0.344136 * U - 0.714136 * V), 255);
-            int B = qBound(0, (int)(Y + 1.772 * U), 255);
-
-            rgbImage.setPixel(x, y, qRgb(R, G, B));
-        }
-    }
-    if (!rgbImage.save(fileName))
-    {
-        qDebug() << "Failed to save image to";
-    }
-    else
-    {
-        qDebug() << "Image saved to";
-    }
-}
-
-void NetworkReceiver::getInfoReceive(int width, int height)
+void NetworkReceiver::getInfo()
 {
     auto currentTime = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
     if (elapsedSeconds.count() >= 1.0)
     {
         int fps = frameCount.load() / elapsedSeconds.count();
-        double bandwidth = (totalBytesReceive / elapsedSeconds.count()) / 125000;
+        int pps = packetCount.load() / elapsedSeconds.count();
+        double bandwidth = std::round((totalBytesReceive / elapsedSeconds.count()) / 125000.0 * 1000.0) / 1000.0;
         frameCount = 0;
+        packetCount = 0;
         totalBytesReceive = 0;
         startTime = currentTime;
 
         if (_callback != nullptr)
-            _callback->onRenderInfoReceiver(width, height, fps, bandwidth);
+            _callback->onShowInfoReceive(fps, pps, bandwidth);
     }
 }

@@ -3,8 +3,11 @@
 
 #include <QMainWindow>
 #include "./CallController/CallController.h"
+#include "./Utils/YuvWidget.h"
 #include <memory>
-#include <qDebug>
+#include <QDebug>
+#include <QTimer>
+#include <QLayout>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -18,18 +21,21 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(std::shared_ptr<CallController> callController, int applicationPort, QWidget *parent = nullptr);
+    MainWindow(std::unique_ptr<CallController> callController, int applicationPort, QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
     // handle button
     void onBtnStartCallClicked();
     void onBtnStopCallClicked();
+    void renderInfo();
 
 private:
     Ui::MainWindow *ui;
-    std::shared_ptr<CallController> _callController;
+    // YuvWidget *videoDisplay;
+    std::unique_ptr<CallController> _callController;
     int applicationPort;
     int partnerPort;
+    QTimer *infoTimer;
 };
 #endif // MAINWINDOW_H

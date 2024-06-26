@@ -1,6 +1,6 @@
 #include "./EncodeFrame.h"
 
-EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height), encoder(nullptr)
+EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height), encoder(nullptr), frameCount(0)
 {
     x264_param_default_preset(&param, "veryfast", "zerolatency");
     param.i_threads = X264_SYNC_LOOKAHEAD_AUTO;
@@ -10,12 +10,12 @@ EncodeFrame::EncodeFrame(int width, int height) : _width(width), _height(height)
     param.i_height = height;
     param.i_fps_num = 30;
     param.i_fps_den = 1;
-    param.i_keyint_max = 60;
+    param.i_keyint_max = 30; // khoảng cách xuất hiện khung hình I; khung hình mã hóa ko cần tham chiếu đến khung hình khác, giá trị này giảm -> tần suất khung hình I tăng
     param.b_intra_refresh = 1;
     param.rc.i_rc_method = X264_RC_CRF;
-    param.rc.f_rf_constant = 23;
-    param.rc.i_vbv_buffer_size = 5000000;
-    param.rc.i_vbv_max_bitrate = 1500000;
+    param.rc.f_rf_constant = 28; // điều khiển tốc độ mã hóa, cân bằng giữa chất lượng và kích thước tập. Default 23, > 23 có khả năng bị giảm chất lượng ở những chuyển động
+    param.rc.i_vbv_buffer_size = 1000000;
+    param.rc.i_vbv_max_bitrate = 1000000;
     param.b_repeat_headers = 1;
     param.b_annexb = 1;
 
@@ -37,19 +37,23 @@ EncodeFrame::~EncodeFrame()
     x264_picture_clean(&pic);
 }
 
-ZEncodedFrame EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame)
+void EncodeFrame::registerCallback(Callback *callback)
 {
-    ZEncodedFrame encodedFrame;
+    _callback = callback;
+}
+
+void EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame)
+{
     x264_picture_init(&pic);
     pic.img.i_csp = X264_CSP_I420;
     pic.img.i_plane = 3;
     pic.img.i_stride[0] = frame.width;
     pic.img.i_stride[1] = frame.width / 2;
     pic.img.i_stride[2] = frame.width / 2;
-    pic.img.plane[0] = const_cast<uint8_t *>(frame.yuv420pData);
+    pic.img.plane[0] = const_cast<uint8_t *>(frame.yuv420pData.data());
     pic.img.plane[1] = pic.img.plane[0] + frame.width * frame.height;
     pic.img.plane[2] = pic.img.plane[1] + frame.width * frame.height / 4;
-    pic.i_pts = frame.timestamp;
+    pic.i_pts = (frame.timestamp * TIMEBASE) / 1000;
 
     x264_nal_t *nal;
     int i_nal;
@@ -58,17 +62,33 @@ ZEncodedFrame EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame)
     if (frameSize < 0)
     {
         qDebug() << "Error encode";
-        return encodedFrame;
+        return;
     }
+
     encodedFrame.frameSize = frameSize;
-    encodedFrame.i_nal = i_nal;
     encodedFrame.width = frame.width;
     encodedFrame.height = frame.height;
     encodedFrame.timestamp = frame.timestamp;
+
     for (int i = 0; i < i_nal; ++i)
     {
         encodedFrame.encodedData.insert(encodedFrame.encodedData.end(), nal[i].p_payload, nal[i].p_payload + nal[i].i_payload);
     }
+    getInfo(_width, _height);
+}
 
-    return encodedFrame;
+void EncodeFrame::getInfo(int width, int height)
+{
+    frameCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
+    {
+        int fps = frameCount.load() / elapsedSeconds.count();
+        frameCount = 0;
+        startTime = currentTime;
+
+        if (_callback != nullptr)
+            _callback->onShowInfoEncode(width, height, fps);
+    }
 }

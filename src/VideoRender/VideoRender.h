@@ -1,31 +1,34 @@
 #ifndef VIDEORENDER_H
 #define VIDEORENDER_H
 
-#include <qDebug>
+#include <QDebug>
 #include <QImage>
 #include <QLabel>
 #include <QPixmap>
 
 #include "./../VideoCapture/VideoCapture.h"
 
-class VideoRender {
+class VideoRender
+{
 public:
-    class Callback {
+    class Callback
+    {
     public:
-        virtual void onStateChanged() = 0;
+        virtual void onShowInfoLocalFps(int fps) = 0;
+        virtual void onShowInfoPartnerFps(int fps) = 0;
     };
+
 public:
     VideoRender(){};
     virtual ~VideoRender() = default;
 
-    void registerCallback(Callback* callback);
+    void registerCallback(Callback *callback);
 
-    virtual void setVideoFrameLabel(QLabel *label) = 0;
-    virtual QImage convertYUV420ToRGB(const uchar *yuv240Data, int width, int height) = 0;
-    virtual void render(const ZVideoFrame &frame) = 0;
+    virtual void setVideoFrameLabel(QLabel *&label) = 0;
+    virtual void render(const QImage &image) = 0;
 
 protected:
-    Callback* _callback;
+    Callback *_callback;
 };
 
 #endif

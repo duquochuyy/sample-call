@@ -3,11 +3,12 @@
 
 QtVideoCapture::QtVideoCapture(QObject *parent) : QObject(parent),
                                                   camera(new QCamera(QCameraInfo::defaultCamera())),
-                                                  videoSurface(new QTVideoSurface(this))
+                                                  videoSurface(new QTVideoSurface(this)),
+                                                  frameCount(0)
 {
     QObject::connect(camera, &QCamera::stateChanged, this, &QtVideoCapture::onCameraStateChanged);
     QObject::connect(camera, QOverload<QCamera::Error>::of(&QCamera::error), this, &QtVideoCapture::onCameraError);
-    QObject::connect(videoSurface, &QTVideoSurface::frameCaptured, this, &QtVideoCapture::onFrameCaptured);
+    QObject::connect(videoSurface, &QTVideoSurface::frameCapturedRawFormat, this, &QtVideoCapture::onFrameCapturedRawFormat);
 
     camera->setViewfinder(videoSurface);
 }
@@ -36,11 +37,13 @@ void QtVideoCapture::stop()
     camera->stop();
 }
 
-void QtVideoCapture::onFrameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp)
+void QtVideoCapture::onFrameCapturedRawFormat(const ZRootFrame &frame)
 {
-    ZVideoFrame newFrame(yuv420pData, width, height, timestamp);
+    getInfo(frame.width, frame.height);
     if (_callback != nullptr)
-        _callback->onNewVideoFrame(newFrame);
+    {
+        _callback->onNewVideoFrameRawFormat(frame);
+    }
 }
 
 void QtVideoCapture::onCameraStateChanged(QCamera::State state)
@@ -90,5 +93,21 @@ void QtVideoCapture::onCameraError(QCamera::Error error)
     else if (error == QCamera::NotSupportedFeatureError)
     {
         qDebug() << "Feature not supported error";
+    }
+}
+
+void QtVideoCapture::getInfo(int width, int height)
+{
+    frameCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
+    if (elapsedSeconds.count() >= 1.0)
+    {
+        int fps = frameCount.load() / elapsedSeconds.count();
+        frameCount = 0;
+        startTime = currentTime;
+
+        if (_callback != nullptr)
+            _callback->onShowInfoCapture(width, height, fps);
     }
 }

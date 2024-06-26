@@ -20,16 +20,32 @@ extern "C"
 class DecodeFrame
 {
 public:
+    class Callback
+    {
+    public:
+        virtual void onShowInfoDecode(int width, int height, int fps) = 0;
+    };
+
+public:
     DecodeFrame(int width, int height);
     ~DecodeFrame();
 
-    ZVideoFrame decodeH264ToYUV420(const std::vector<uint8_t> &encodedData, const uint64_t timestamp);
+    void registerCallback(Callback *callback);
+
+    void decodeH264ToYUV420(const std::vector<uchar> &encodedData, const uint64_t timestamp, std::shared_ptr<ZVideoFrame> &decodedFrame);
 
 private:
+    void getInfo(int width, int height);
+
+private:
+    Callback *_callback;
     const AVCodec *codec;
     AVCodecContext *codecContext;
     AVFrame *frame;
     AVPacket *packet;
+
+    std::atomic<int> frameCount;
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 
 #endif

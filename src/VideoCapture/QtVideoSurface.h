@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QImage>
 #include "./../utils/utils.h"
+#include "./../Struct/ZRootFrame.h"
 
 class QTVideoSurface : public QAbstractVideoSurface
 {
@@ -24,12 +25,14 @@ public:
     bool start(const QVideoSurfaceFormat &format) override;
     void stop() override;
 
+private:
+    void getInfo();
 signals:
-    void frameCaptured(const uchar *yuv420pData, int width, int height, uint64_t timestamp);
+    void frameCapturedRawFormat(const ZRootFrame &frame);
 
 private:
-    void processYUVDataToGrayScale(const uchar *yuvData, int width, int height);
-    uchar *processNV12DatatToYUV420(const uchar *nv12Data, int width, int height);
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+    std::atomic<int> frameCount;
 };
 
 #endif // QTVIDEOSURFACE_H

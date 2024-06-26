@@ -18,8 +18,10 @@
 #include <iostream>
 #include <x264.h>
 
-#include "./../VideoCapture/VideoCapture.h"
 #include "./../Codec/EncodeFrame.h"
+#include "./../Struct/ZRootFrame.h"
+#include "./../Struct/ZEncodedFrame.h"
+#include "./../Struct/ZVideoFrame.h"
 
 #define PACKET_SIZE 1024
 
@@ -29,7 +31,7 @@ public:
     class Callback
     {
     public:
-        virtual void onRenderInfoSender(int width, int height, int fps, double bitrate) = 0;
+        virtual void onShowInfoSend(int fps, int pps, double bitrate) = 0;
     };
 
 public:
@@ -37,15 +39,13 @@ public:
     ~NetworkSender();
     void registerCallback(Callback *callback);
     bool handleConnectPartner(std::string ip, int port);
-    void addNewFrame(const ZVideoFrame &frame);
     void addNewEncodedFrame(const ZEncodedFrame &encodedFrame);
     void disconnect();
 
 private:
     void startSending();
     void sendData();
-    void testShowImage(uchar *yuv420pData, int width, int height);
-    void getInfoSend();
+    void getInfo();
 
 private:
     Callback *_callback;
@@ -54,21 +54,14 @@ private:
     int sock;
     bool isSending;
     bool hasNewFrame = false;
-    ZVideoFrame currentFrame;
     ZEncodedFrame currentEncodedFrame;
 
-    x264_param_t param;
-    x264_picture_t pic;
-    x264_picture_t pic_encode;
-    x264_t *encoder = nullptr;
-
     std::thread sendThread;
-    std::mutex frameMutex;
     std::mutex encodedFrameMutex;
-    std::mutex socketMutex;
 
     std::atomic<uint64_t> totalBytesSent;
     std::atomic<int> frameCount;
+    std::atomic<int> packetCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 #endif

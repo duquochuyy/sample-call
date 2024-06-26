@@ -1,7 +1,7 @@
 #ifndef NETWORKRECEIVER_H
 #define NETWORKRECEIVER_H
 
-#include <qDebug>
+#include <QDebug>
 #include <QLabel>
 #include <unistd.h>
 #include <stdio.h>
@@ -15,10 +15,12 @@
 #include <chrono>
 #include <atomic>
 
-#include "./../VideoCapture/VideoCapture.h"
+#include "./../Codec/EncodeFrame.h"
+#include "./../Struct/ZRootFrame.h"
+#include "./../Struct/ZEncodedFrame.h"
+#include "./../Struct/ZVideoFrame.h"
 
 #define PACKER_SIZE 1024
-#define MAX_FRAMES 150
 
 class NetworkReceiver
 {
@@ -27,9 +29,10 @@ public:
     {
     public:
         virtual void onAcceptedConnection(std::string partnerIP, int partnerPort) = 0;
-        virtual void onReceiveFrame(const std::vector<uint8_t> &encodedData, const uint64_t timestamp) = 0;
+        virtual void onReceiveFrame(ZEncodedFrame &encodedFrame) = 0;
+        virtual void onReceiveDataFrame(const std::vector<uchar> &fullFrameData, uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
-        virtual void onRenderInfoReceiver(int width = 640, int height = 480, int fps = 30, double bitrate = 1.0) = 0;
+        virtual void onShowInfoReceive(int fps, int pps, double bitrate) = 0;
     };
 
 public:
@@ -44,8 +47,7 @@ private:
     void receiveData();
     void handleConnectBack(int partnerPort);
     void handleRequestDisconnect();
-    void testShowImage(const uchar *yuv420pData, int width, int height, QString fileName);
-    void getInfoReceive(int width, int height);
+    void getInfo();
 
 private:
     Callback *_callback;
@@ -53,7 +55,7 @@ private:
     int _port;
     int receiver_fd;
     int sender_sock;
-    std::unordered_map<uint64_t, std::map<int, std::vector<char>>> bufferFrames;
+    std::unordered_map<uint64_t, std::map<int, std::vector<uchar>>> bufferFrames;
 
     std::thread listenThread;
     std::thread receiveThread;
@@ -64,6 +66,7 @@ private:
 
     std::atomic<uint64_t> totalBytesReceive;
     std::atomic<int> frameCount;
+    std::atomic<int> packetCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 

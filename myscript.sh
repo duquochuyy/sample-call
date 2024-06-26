@@ -11,6 +11,8 @@ if [ "$1" == "build" ]; then
     fi
 elif [ "$1" == "run" ]; then
     ./myscript.sh build
+    
+    ./myscript.sh close
 
     if [ "$2" == "terminal" ]; then
         app_dir="/Users/lap15850/HuyDQ6/projects/SampleCallback/SampleCallback.app/Contents/MacOS"
