@@ -235,7 +235,7 @@ void CallController::stopCall() {
     connectedPartner = false;
 }
 
-std::shared_ptr<ZLabelRender> CallController::getLabelRender() const {
+std::shared_ptr<ZValueInfo> CallController::getLabelRender() const {
     return _valueInfo;
 }
 
