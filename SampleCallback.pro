@@ -39,7 +39,8 @@ SOURCES += \
     src/utils/TimeTracker.cpp \
     src/utils/ThreadSafeQueue.cpp \
     src/utils/Convert.cpp \
-    src/utils/YuvWidget.cpp \
+    src/utils/Yuv420Widget.cpp \
+    src/utils/NV12Widget.cpp \
     src/MainWindow.cpp
 
 HEADERS += \
@@ -58,7 +59,8 @@ HEADERS += \
     src/utils/TimeTracker.h \
     src/utils/ThreadSafeQueue.h \
     src/utils/Convert.h \
-    src/utils/YuvWidget.h \
+    src/utils/Yuv420Widget.h \
+    src/utils/NV12Widget.h \
     src/MainWindow.h
 
 FORMS += \

@@ -1,32 +1,33 @@
 #ifndef CALLCONTROLLER_H
 #define CALLCONTROLLER_H
 
-#include <memory>
-#include <QLabel>
-#include <vector>
-#include <thread>
 #include <QByteArray>
+#include <QLabel>
+#include <memory>
+#include <thread>
+#include <vector>
 
+#include "./../Codec/DecodeFrame.h"
+#include "./../Codec/EncodeFrame.h"
+#include "./../Network/NetworkReceiver.h"
+#include "./../Network/NetworkSender.h"
 #include "./../VideoCapture/QtVideoCapture.h"
 #include "./../VideoCapture/QtVideoSurface.h"
 #include "./../VideoCapture/VideoCapture.h"
-#include "./../VideoRender/VideoRender.h"
-#include "./../VideoRender/QtVideoRender.h"
 #include "./../VideoRender/PartnerVideoRender.h"
-#include "./../Network/NetworkReceiver.h"
-#include "./../Network/NetworkSender.h"
-#include "./../Codec/EncodeFrame.h"
-#include "./../Codec/DecodeFrame.h"
+#include "./../VideoRender/QtVideoRender.h"
+#include "./../VideoRender/VideoRender.h"
 
-#include "./../utils/TimeTracker.h"
-#include "./../utils/ThreadSafeQueue.h"
 #include "./../utils/Convert.h"
-#include "./../utils/YuvWidget.h"
+#include "./../utils/NV12Widget.h"
+#include "./../utils/ThreadSafeQueue.h"
+#include "./../utils/TimeTracker.h"
+#include "./../utils/Yuv420Widget.h"
 
-#include "./../Struct/ZRootFrame.h"
 #include "./../Struct/ZEncodedFrame.h"
-#include "./../Struct/ZVideoFrame.h"
 #include "./../Struct/ZLabelRender.h"
+#include "./../Struct/ZRootFrame.h"
+#include "./../Struct/ZVideoFrame.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -37,8 +38,7 @@ class CallController : public VideoCapture::Callback,
                        public NetworkReceiver::Callback,
                        public NetworkSender::Callback,
                        public EncodeFrame::Callback,
-                       public DecodeFrame::Callback
-{
+                       public DecodeFrame::Callback {
 public:
     CallController(int port = 8080);
     ~CallController();
@@ -48,11 +48,13 @@ public:
     // for render
     void setVideoFrameLabelLocal(QLabel *&label);
     void setVideoFrameLabelPartner(QLabel *&label);
-    void setVideoFrameLabelYUV420(YuvWidget *&label);
+    void setVideoFrameLabelYUV420(std::shared_ptr<Yuv420Widget> label);
+    void setVideoFrameLabelNV12(std::shared_ptr<NV12Widget> label);
 
     // for receive
     void onReceiveFrame(ZEncodedFrame &encodedFrame) override;
-    void onReceiveDataFrame(const std::vector<uchar> &fullFrameData, uint64_t timestamp) override;
+    void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
+                            uint64_t timestamp) override;
     void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
     void onRequestDisconnect() override;
 
@@ -101,13 +103,19 @@ private:
     TimeTracker processDecodeTime;
     TimeTracker processPartnerConvertTime;
     // for queue frame
-    ThreadSafeQueue<std::shared_ptr<ZRootFrame>> localQueue;           // for convert local NV12 -> RGB
-    ThreadSafeQueue<std::shared_ptr<ZRootFrame>> convertRawDataQueue;  // for convert to send NV12 -> YUV420
-    ThreadSafeQueue<std::shared_ptr<ZVideoFrame>> encodeQueue;         // for encode to send
-    ThreadSafeQueue<std::shared_ptr<ZEncodedFrame>> decodeQueue;       // for decode partner
-    ThreadSafeQueue<std::shared_ptr<ZVideoFrame>> convertPartnerQueue; // for convert to render partner
+    ThreadSafeQueue<std::shared_ptr<ZRootFrame>>
+        localQueue; // for convert local NV12 -> RGB
+    ThreadSafeQueue<std::shared_ptr<ZRootFrame>>
+        convertRawDataQueue; // for convert to send NV12 -> YUV420
+    ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
+        encodeQueue; // for encode to send
+    ThreadSafeQueue<std::shared_ptr<ZEncodedFrame>>
+        decodeQueue; // for decode partner
+    ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
+        convertPartnerQueue; // for convert to render partner
     // test render yuv gpu
-    // YuvWidget *_partnerRenderWidget = nullptr;
+    std::shared_ptr<Yuv420Widget> _partnerRenderWidget;
+    std::shared_ptr<NV12Widget> _localRenderWidget;
 };
 
 #endif
