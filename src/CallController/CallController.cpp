@@ -2,7 +2,7 @@
 
 CallController::CallController(int port)
     : applicationPort(port),
-      _valueInfo(std::make_shared<ZValueInfo>()),
+      _labelRender(std::make_shared<ZLabelRender>()),
       connectedPartner(false) {
     _vidCapture.reset(new QtVideoCapture());
     _vidCapture->registerCallback(this);
@@ -62,13 +62,19 @@ void CallController::processConvertRenderLocal() {
         }
 
         processLocalConvertTime.start();
+        // convert -> render local
+        // QImage imageLocal;
+        // _convert->processNV12DatatToRGB(framePtr->nv12Data, framePtr->width,
+        //                                 framePtr->height, imageLocal);
+        // _localRender->render(imageLocal);
 
-        _localRender->render(framePtr, ImageFormat::NV12);
+        _localRenderWidget->setFrameData(framePtr.get()->nv12Data,
+                                         framePtr->width, framePtr->height);
 
         processLocalConvertTime.stop();
         double localConvertTime = processLocalConvertTime.getAverageTime();
         if (localConvertTime != -1) {
-            _valueInfo->localConvertTime = localConvertTime;
+            _labelRender->localConvertTime = localConvertTime;
         }
     }
 }
@@ -94,7 +100,7 @@ void CallController::processConvertRawData() {
         processEncodeConvertTime.stop();
         double encodeConvertTime = processEncodeConvertTime.getAverageTime();
         if (encodeConvertTime != -1) {
-            _valueInfo->encodeConvertTime = encodeConvertTime;
+            _labelRender->encodeConvertTime = encodeConvertTime;
         }
         encodeQueue.push(frame);
     }
@@ -116,7 +122,7 @@ void CallController::processEncodeSend() {
         processEncodeTime.stop();
         double encodeTime = processEncodeTime.getAverageTime();
         if (encodeTime != -1) {
-            _valueInfo->encodeTime = encodeTime;
+            _labelRender->encodeTime = encodeTime;
         }
 
         _networkSender->addNewEncodedFrame(encodedFrame);
@@ -142,7 +148,7 @@ void CallController::processDecodeRender() {
         processDecodeTime.stop();
         double decodeTime = processDecodeTime.getAverageTime();
         if (decodeTime != -1) {
-            _valueInfo->decodeTime = decodeTime;
+            _labelRender->decodeTime = decodeTime;
         }
         convertPartnerQueue.push(decodedFrame);
     }
@@ -159,24 +165,20 @@ void CallController::processConvertPartnerThread() {
 
         processPartnerConvertTime.start();
 
-        _partnerRender->render(framePtr, ImageFormat::YUV420);
+        // convert to render partner
+        // QImage imagePartner;
+        // _convert->convertYUV420ToRGB(framePtr.get()->yuv420pData,
+        // framePtr.get()->width, framePtr.get()->height, imagePartner);
+        // _partnerRender->render(imagePartner);
 
         // test render yuv gpu
-        // QByteArray yuvData(reinterpret_cast<const char
-        // *>(framePtr->yuv420pData.data()),
-        // static_cast<int>(framePtr->yuv420pData.size()));
-        // QMetaObject::invokeMethod(_partnerRenderWidget, "setFrameData",
-        // Qt::AutoConnection,
-        //                           Q_ARG(QByteArray, yuvData),
-        //                           Q_ARG(int, framePtr->width),
-        //                           Q_ARG(int, framePtr->height));
-        // std::this_thread::sleep_for(std::chrono::duration<double,
-        // std::milli>(1));
+        _partnerRenderWidget->setFrameData(framePtr.get()->yuv420pData,
+                                           framePtr->width, framePtr->height);
 
         processPartnerConvertTime.stop();
         double partnerConvertTime = processPartnerConvertTime.getAverageTime();
         if (partnerConvertTime != -1) {
-            _valueInfo->partConvertTime = partnerConvertTime;
+            _labelRender->partConvertTime = partnerConvertTime;
         }
     }
 }
@@ -199,8 +201,13 @@ void CallController::setVideoFrameLabelPartner(QLabel *&label) {
     _partnerRender->setVideoFrameLabel(label);
 }
 
-void CallController::setVideoFrameLabelYUV420(YuvWidget *&label) {
-    // _partnerRenderWidget = label;
+void CallController::setVideoFrameLabelYUV420(
+    std::shared_ptr<Yuv420Widget> label) {
+    _partnerRenderWidget = label;
+}
+
+void CallController::setVideoFrameLabelNV12(std::shared_ptr<NV12Widget> label) {
+    _localRenderWidget = label;
 }
 
 void CallController::startCall(std::string partnerIP, int partnerPort) {
@@ -228,43 +235,45 @@ void CallController::stopCall() {
     connectedPartner = false;
 }
 
-std::shared_ptr<ZValueInfo> CallController::getLabelRender() const {
-    return _valueInfo;
+std::shared_ptr<ZLabelRender> CallController::getLabelRender() const {
+    return _labelRender;
 }
 
 // render
 void CallController::onShowInfoCapture(int width, int height, int fps) {
-    _valueInfo->captureWidth = width;
-    _valueInfo->captureHeight = height;
-    _valueInfo->captureFps = fps;
+    _labelRender->captureWidth = width;
+    _labelRender->captureHeight = height;
+    _labelRender->captureFps = fps;
 }
 
-void CallController::onShowInfoLocalFps(int fps) { _valueInfo->localFps = fps; }
+void CallController::onShowInfoLocalFps(int fps) {
+    _labelRender->localFps = fps;
+}
 
 void CallController::onShowInfoEncode(int width, int height, int fps) {
-    _valueInfo->encodeWidth = width;
-    _valueInfo->encodeHeight = height;
-    _valueInfo->encodeFps = fps;
+    _labelRender->encodeWidth = width;
+    _labelRender->encodeHeight = height;
+    _labelRender->encodeFps = fps;
 }
 
 void CallController::onShowInfoSend(int fps, int pps, double bitrate) {
-    _valueInfo->sendFps = fps;
-    _valueInfo->sendPps = pps;
-    _valueInfo->sendBitrate = bitrate;
+    _labelRender->sendFps = fps;
+    _labelRender->sendPps = pps;
+    _labelRender->sendBitrate = bitrate;
 }
 
 void CallController::onShowInfoReceive(int fps, int pps, double bitrate) {
-    _valueInfo->receiveFps = fps;
-    _valueInfo->receivePps = pps;
-    _valueInfo->receiveBitrate = bitrate;
+    _labelRender->receiveFps = fps;
+    _labelRender->receivePps = pps;
+    _labelRender->receiveBitrate = bitrate;
 }
 
 void CallController::onShowInfoDecode(int width, int height, int fps) {
-    _valueInfo->decodeWidth = width;
-    _valueInfo->decodeHeight = height;
-    _valueInfo->decodeFps = fps;
+    _labelRender->decodeWidth = width;
+    _labelRender->decodeHeight = height;
+    _labelRender->decodeFps = fps;
 }
 
 void CallController::onShowInfoPartnerFps(int fps) {
-    _valueInfo->partnerFps = fps;
+    _labelRender->partnerFps = fps;
 }

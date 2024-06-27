@@ -42,7 +42,8 @@ class CallController : public VideoCapture::Callback,
     // for render
     void setVideoFrameLabelLocal(QLabel *&label);
     void setVideoFrameLabelPartner(QLabel *&label);
-    void setVideoFrameLabelYUV420(YuvWidget *&label);
+    void setVideoFrameLabelYUV420(std::shared_ptr<Yuv420Widget> label);
+    void setVideoFrameLabelNV12(std::shared_ptr<NV12Widget> label);
 
     // for receive
     void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
@@ -105,8 +106,9 @@ class CallController : public VideoCapture::Callback,
         decodeQueue;  // for decode partner
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
         convertPartnerQueue;  // for convert to render partner
-                              // test render yuv gpu
-                              // YuvWidget *_partnerRenderWidget = nullptr;
+    // test render yuv gpu
+    std::shared_ptr<Yuv420Widget> _partnerRenderWidget;
+    std::shared_ptr<NV12Widget> _localRenderWidget;
 };
 
 #endif

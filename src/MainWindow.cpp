@@ -8,9 +8,7 @@ MainWindow::MainWindow(std::unique_ptr<CallController> callController,
       ui(new Ui::MainWindow),
       _callController(std::move(callController)),
       applicationPort(applicationPort),
-      infoTimer(new QTimer(this))
-//   ,videoDisplay(new YuvWidget(this))
-{
+      infoTimer(new QTimer(this)) {
     ui->setupUi(this);
     ui->videoFrameLabelLocal->raise();
 
@@ -30,19 +28,35 @@ MainWindow::MainWindow(std::unique_ptr<CallController> callController,
 
     // test render yuv gpu
     // Remove the old QLabel from the layout
-    // QGridLayout *gridLayout = qobject_cast<QGridLayout
-    // *>(ui->centralwidget->layout()); if (gridLayout)
-    // {
-    //     int row, column, rowSpan, columnSpan;
-    //     gridLayout->getItemPosition(gridLayout->indexOf(ui->videoFrameLabelPartner),
-    //     &row, &column, &rowSpan, &columnSpan);
-    //     gridLayout->removeWidget(ui->videoFrameLabelPartner);
-    //     delete ui->videoFrameLabelPartner;
-    //     gridLayout->addWidget(videoDisplay, row, column, rowSpan,
-    //     columnSpan);
-    // }
-    // qDebug() << "YuvWidget initial size:" << videoDisplay->size();
-    // _callController->setVideoFrameLabelYUV420(videoDisplay);
+    _partnerRenderWidget = std::make_shared<Yuv420Widget>(this);
+    QGridLayout *gridLayout =
+        qobject_cast<QGridLayout *>(ui->centralwidget->layout());
+    if (gridLayout) {
+        int row, column, rowSpan, columnSpan;
+        gridLayout->getItemPosition(
+            gridLayout->indexOf(ui->videoFrameLabelPartner), &row, &column,
+            &rowSpan, &columnSpan);
+        gridLayout->removeWidget(ui->videoFrameLabelPartner);
+        delete ui->videoFrameLabelPartner;
+        gridLayout->addWidget(_partnerRenderWidget.get(), row, column, rowSpan,
+                              columnSpan);
+    }
+    qDebug() << "YuvWidget initial size:" << _partnerRenderWidget->size();
+    _callController->setVideoFrameLabelYUV420(_partnerRenderWidget);
+
+    _localRenderWidget = std::make_shared<NV12Widget>(this);
+    if (gridLayout) {
+        int row, column, rowSpan, columnSpan;
+        gridLayout->getItemPosition(
+            gridLayout->indexOf(ui->videoFrameLabelLocal), &row, &column,
+            &rowSpan, &columnSpan);
+        gridLayout->removeWidget(ui->videoFrameLabelLocal);
+        delete ui->videoFrameLabelLocal;
+        gridLayout->addWidget(_localRenderWidget.get(), row, column, rowSpan,
+                              columnSpan);
+    }
+    qDebug() << "NV12Widget initial size:" << _localRenderWidget->size();
+    _callController->setVideoFrameLabelNV12(_localRenderWidget);
 }
 
 MainWindow::~MainWindow() {
