@@ -1,6 +1,5 @@
 #include "./VideoRender.h"
 
-void VideoRender::registerCallback(Callback *callback)
-{
-    _callback = callback;
-}
+VideoRender::VideoRender() { _convert.reset(new Convert()); }
+
+void VideoRender::registerCallback(Callback *callback) { _callback = callback; }

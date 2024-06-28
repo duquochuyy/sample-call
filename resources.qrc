@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>src/shaders/yuv_vertex.glsl</file>
-        <file>src/shaders/yuv_fragment.glsl</file>
-    </qresource>
-</RCC>

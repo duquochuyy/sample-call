@@ -1,41 +1,38 @@
 #include "./PartnerVideoRender.h"
 
-PartnerVideoRender::PartnerVideoRender() : frameCount(0)
-{
+#include <QPixmap>
+
+#include "./../Common/ZVideoFrame.h"
+#include "./../Utils/Define.h"
+PartnerVideoRender::PartnerVideoRender() : frameCount(0) {
+    startTime = std::chrono::steady_clock::now();
 }
 
-PartnerVideoRender::~PartnerVideoRender()
-{
-    delete _label;
+PartnerVideoRender::~PartnerVideoRender() {}
+
+void PartnerVideoRender::setVideoFrameLabel(
+    std::shared_ptr<YuvWidget> &widget) {
+    _partnerRenderWidget = widget;
 }
 
-void PartnerVideoRender::setVideoFrameLabel(QLabel *&label)
-{
-    _label = label;
-}
-
-void PartnerVideoRender::render(const QImage &image)
-{
-    if (image.isNull()) // Kiểm tra xem QImage có trống không
-    {
-        qDebug() << "Empty image received.";
+void PartnerVideoRender::render(const std::shared_ptr<void> &frame,
+                                ImageFormat format) {
+    if (format == ImageFormat::YUV420) {
+        auto framePtr = std::static_pointer_cast<ZVideoFrame>(frame);
+        _partnerRenderWidget->setFrameData(framePtr.get()->yuv420pData,
+                                           framePtr->width, framePtr->height);
+        getInfo(framePtr->width, framePtr->height);
+    } else {
+        qDebug() << "Unsupported image format";
         return;
-    }
-
-    if (_label != nullptr)
-    {
-        _label->setPixmap(QPixmap::fromImage(image).scaled(_label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        getInfo(image.width(), image.height());
     }
 };
 
-void PartnerVideoRender::getInfo(int width, int height)
-{
+void PartnerVideoRender::getInfo(int width, int height) {
     frameCount++;
     auto currentTime = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
-    if (elapsedSeconds.count() >= 1.0)
-    {
+    if (elapsedSeconds.count() >= 1.0) {
         int fps = frameCount.load() / elapsedSeconds.count();
         frameCount = 0;
         startTime = currentTime;

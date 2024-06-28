@@ -4,16 +4,15 @@
 #include <chrono>
 #include <mutex>
 
-class TimeTracker
-{
-public:
+class TimeTracker {
+   public:
     TimeTracker();
     ~TimeTracker();
     void start();
     void stop();
     double getAverageTime();
 
-private:
+   private:
     double totalTime;
     int callCount;
     std::chrono::steady_clock::time_point startPoint;

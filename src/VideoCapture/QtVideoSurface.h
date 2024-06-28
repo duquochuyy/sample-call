@@ -1,38 +1,38 @@
 #ifndef QTVIDEOSURFACE_H
 #define QTVIDEOSURFACE_H
 
-#include <QMainWindow>
-#include <QCamera>
 #include <QAbstractVideoSurface>
+#include <QCamera>
+#include <QDebug>
+#include <QMainWindow>
 #include <QVideoFrame>
 #include <QVideoSurfaceFormat>
-#include <QDebug>
-#include <QImage>
-#include "./../utils/utils.h"
-#include "./../Struct/ZRootFrame.h"
 
-class QTVideoSurface : public QAbstractVideoSurface
-{
+#include "./../Common/ZRootFrame.h"
+#include "./../Utils/Utils.h"
+
+class QTVideoSurface : public QAbstractVideoSurface {
     Q_OBJECT
-public:
+   public:
     QTVideoSurface(QObject *parent = nullptr);
 
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(
-        QAbstractVideoBuffer::HandleType handleType = QAbstractVideoBuffer::NoHandle) const override;
+        QAbstractVideoBuffer::HandleType handleType =
+            QAbstractVideoBuffer::NoHandle) const override;
 
     bool present(const QVideoFrame &frame) override;
 
     bool start(const QVideoSurfaceFormat &format) override;
     void stop() override;
 
-private:
+   private:
     void getInfo();
-signals:
+   signals:
     void frameCapturedRawFormat(const ZRootFrame &frame);
 
-private:
+   private:
     std::chrono::time_point<std::chrono::steady_clock> startTime;
     std::atomic<int> frameCount;
 };
 
-#endif // QTVIDEOSURFACE_H
+#endif  // QTVIDEOSURFACE_H

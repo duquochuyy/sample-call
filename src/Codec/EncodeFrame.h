@@ -1,44 +1,35 @@
 #ifndef ENCODEFRAME_H
 #define ENCODEFRAME_H
 
-#include <QDebug>
 #include <stdint.h>
-#include <fstream>
+
 #include <iostream>
 #include <string>
+
+#include "./../Common/ZEncodedFrame.h"
+#include "./../Utils/Define.h"
 #include "x264.h"
-#include "./../VideoCapture/VideoCapture.h"
 
-extern "C"
-{
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/opt.h>
-}
-
-#define TIMEBASE 90000
-
-class EncodeFrame
-{
-public:
-    class Callback
-    {
-    public:
+class EncodeFrame {
+   public:
+    class Callback {
+       public:
         virtual void onShowInfoEncode(int width, int height, int fps) = 0;
     };
 
-public:
-    EncodeFrame(int width = 1280, int height = 720);
+   public:
+    EncodeFrame(int width = WIDTH, int height = HEIGHT);
     ~EncodeFrame();
 
     void registerCallback(Callback *callback);
 
-    void encodeYUV420ToH264(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame);
+    void encodeYUV420ToH264(const ZVideoFrame &frame,
+                            ZEncodedFrame &encodedFrame);
 
-private:
+   private:
     void getInfo(int width, int height);
 
-private:
+   private:
     Callback *_callback;
     int _width;
     int _height;
@@ -47,12 +38,6 @@ private:
     x264_param_t param;
     x264_picture_t pic;
     x264_picture_t pic_out;
-
-    // test decode
-    const AVCodec *codec;
-    AVCodecContext *codecContext;
-    AVFrame *frame;
-    AVPacket *packet;
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
