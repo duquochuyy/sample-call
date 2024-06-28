@@ -3,14 +3,11 @@
 
 #include <stdint.h>
 
-#include <QDebug>
 #include <fstream>
 #include <iostream>
 #include <string>
 
-#include "./../Codec/EncodeFrame.h"
-#include "./../VideoCapture/VideoCapture.h"
-#include "x264.h"
+#include "./../Common/ZVideoFrame.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

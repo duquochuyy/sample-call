@@ -8,19 +8,17 @@
 #include <cstring>
 #include <vector>
 
-#include "./../Common/ZEncodedFrame.h"
 #include "./../Common/ZRootFrame.h"
-#include "./../Common/ZVideoFrame.h"
 
 class VideoCapture {
-  public:
+   public:
     class Callback {
-      public:
+       public:
         virtual void onNewVideoFrameRawFormat(const ZRootFrame &frame) = 0;
         virtual void onShowInfoCapture(int width, int height, int fps) = 0;
     };
 
-  public:
+   public:
     VideoCapture() {};
     virtual ~VideoCapture() = default;
 
@@ -30,7 +28,7 @@ class VideoCapture {
     virtual void start() = 0;
     virtual void stop() = 0;
 
-  protected:
+   protected:
     Callback *_callback;
 };
 

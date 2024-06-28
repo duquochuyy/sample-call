@@ -41,7 +41,8 @@ SOURCES += \
     $$ROOT_DIR/src/Utils/TimeTracker.cpp \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.cpp \
     $$ROOT_DIR/src/Utils/Convert.cpp \
-    $$ROOT_DIR/src/Utils/YuvWidget.cpp \
+    $$ROOT_DIR/src/VideoRender/CustomWidget/Yuv420Widget.cpp \
+    $$ROOT_DIR/src/VideoRender/CustomWidget/NV12Widget.cpp \
     $$ROOT_DIR/src/MainWindow.cpp
 
 HEADERS += \
@@ -60,7 +61,9 @@ HEADERS += \
     $$ROOT_DIR/src/Utils/TimeTracker.h \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.h \
     $$ROOT_DIR/src/Utils/Convert.h \
-    $$ROOT_DIR/src/Utils/YuvWidget.h \
+    $$ROOT_DIR/src/VideoRender/CustomWidget/YuvWidget.h \
+    $$ROOT_DIR/src/VideoRender/CustomWidget/Yuv420Widget.h \
+    $$ROOT_DIR/src/VideoRender/PartnerVideoRender.h \
     $$ROOT_DIR/src/MainWindow.h
 
 FORMS += \

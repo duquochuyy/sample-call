@@ -23,8 +23,6 @@ bool QTVideoSurface::present(const QVideoFrame &frame) {
             int width = cloneFrame.width();
             int height = cloneFrame.height();
             const uint64_t timestamp = Utils::getCurrentTimestamp();
-            // auto frame = std::make_shared<ZRootFrame>(nv12Data, width *
-            // height * 3 / 2, width, height, timestamp);
             ZRootFrame frame(nv12Data, width * height * 3 / 2, width, height,
                              timestamp);
             emit frameCapturedRawFormat(frame);
@@ -54,6 +52,5 @@ void QTVideoSurface::getInfo() {
         int fps = frameCount.load() / elapsedSeconds.count();
         frameCount = 0;
         startTime = currentTime;
-        // qDebug() << "FPS capture in surface: " << fps;
     }
 }

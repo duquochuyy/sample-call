@@ -9,9 +9,6 @@
 #include <unistd.h>
 #include <x264.h>
 
-#include <QDebug>
-#include <QImage>
-#include <QLabel>
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -19,21 +16,17 @@
 #include <string>
 #include <thread>
 
-#include "./../Codec/EncodeFrame.h"
 #include "./../Common/ZEncodedFrame.h"
-#include "./../Common/ZRootFrame.h"
-#include "./../Common/ZVideoFrame.h"
-
-#define PACKET_SIZE 1024
+#include "./../Utils/Define.h"
 
 class NetworkSender {
-  public:
+   public:
     class Callback {
-      public:
+       public:
         virtual void onShowInfoSend(int fps, int pps, double bitrate) = 0;
     };
 
-  public:
+   public:
     NetworkSender(const int localPort);
     ~NetworkSender();
     void registerCallback(Callback *callback);
@@ -41,12 +34,12 @@ class NetworkSender {
     void addNewEncodedFrame(const ZEncodedFrame &encodedFrame);
     void disconnect();
 
-  private:
+   private:
     void startSending();
     void sendData();
     void getInfo();
 
-  private:
+   private:
     Callback *_callback;
 
     int localPort;

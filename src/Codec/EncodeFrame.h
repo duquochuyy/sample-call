@@ -3,13 +3,11 @@
 
 #include <stdint.h>
 
-#include <QDebug>
-#include <fstream>
 #include <iostream>
 #include <string>
 
+#include "./../Common/ZEncodedFrame.h"
 #include "./../Utils/Define.h"
-#include "./../VideoCapture/VideoCapture.h"
 #include "x264.h"
 
 class EncodeFrame {

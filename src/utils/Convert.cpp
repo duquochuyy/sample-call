@@ -26,6 +26,8 @@ void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data,
     }
 }
 
+// không còn dùng đến
+// đã đưa xuống GPU render
 void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data,
                                     int width, int height, QImage &image) {
     int frameSize = width * height;
@@ -60,6 +62,8 @@ void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data,
     }
 }
 
+// không còn dùng đến
+// đã đưa xuống GPU render
 void Convert::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data,
                                  int width, int height, QImage &image) {
     if (yuv420Data.empty()) {

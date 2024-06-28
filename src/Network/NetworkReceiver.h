@@ -9,19 +9,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <QDebug>
-#include <QLabel>
 #include <atomic>
 #include <chrono>
+#include <iostream>
+#include <map>
 #include <thread>
 #include <vector>
 
-#include "./../Codec/EncodeFrame.h"
-#include "./../Common/ZEncodedFrame.h"
-#include "./../Common/ZRootFrame.h"
-#include "./../Common/ZVideoFrame.h"
-
-#define PACKER_SIZE 1024
+#include "./../Utils/Define.h"
 
 class NetworkReceiver {
    public:

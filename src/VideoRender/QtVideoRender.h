@@ -1,6 +1,7 @@
 #ifndef QTVIDEORENDER_H
 #define QTVIDEORENDER_H
 
+#include "./CustomWidget/NV12Widget.h"
 #include "./VideoRender.h"
 
 class QtVideoRender : public VideoRender {
@@ -8,7 +9,7 @@ class QtVideoRender : public VideoRender {
     QtVideoRender();
     ~QtVideoRender();
 
-    void setVideoFrameLabel(QLabel *&label) override;
+    void setVideoFrameLabel(std::shared_ptr<YuvWidget> &widget) override;
     void render(const std::shared_ptr<void> &frame,
                 ImageFormat format) override;
 
@@ -16,9 +17,7 @@ class QtVideoRender : public VideoRender {
     void getInfo(int width, int height);
 
    private:
-    QLabel *_label;
-    QImage image;
-
+    std::shared_ptr<YuvWidget> _localRenderWidget;
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
 };

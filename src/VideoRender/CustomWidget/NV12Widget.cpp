@@ -1,14 +1,9 @@
 #include "NV12Widget.h"
 
-#define PROGRAM_VERTEX_ATTRIBUTE 0
-#define PROGRAM_TEXCOORD_ATTRIBUTE 1
-
-#define ATTRIB_VERTEX 0
-#define ATTRIB_TEXTURE 1
+#include "./../../Utils/Define.h"
 
 struct NV12Widget::YuvWidgetImpl {
-    YuvWidgetImpl()
-        : mFrameSize(0) {}
+    YuvWidgetImpl() : mFrameSize(0) {}
 
     std::vector<unsigned char> mBufYuv;
     int mFrameSize;
@@ -26,18 +21,17 @@ struct NV12Widget::YuvWidgetImpl {
 };
 
 NV12Widget::NV12Widget(QWidget *parent)
-    : QOpenGLWidget(parent), impl(new YuvWidgetImpl) {
-}
+    : QOpenGLWidget(parent), impl(new YuvWidgetImpl) {}
 
-NV12Widget::~NV12Widget() {
-}
+NV12Widget::~NV12Widget() {}
 
-void NV12Widget::setFrameData(const std::vector<unsigned char> &data, int frameWidth, int frameHeight) {
+void NV12Widget::setFrameData(const std::vector<unsigned char> &data,
+                              int frameWidth, int frameHeight) {
     impl->mVideoW = frameWidth;
     impl->mVideoH = frameHeight;
 
     // Allocate memory if not allocated or if size has changed
-    int newSize = frameWidth * frameHeight * 3 / 2; // YUV420 format
+    int newSize = frameWidth * frameHeight * 3 / 2;  // YUV420 format
     if (impl->mBufYuv.size() != newSize) {
         impl->mBufYuv.resize(newSize);
     }
@@ -53,8 +47,10 @@ void NV12Widget::initializeGL() {
 
     glEnable(GL_DEPTH_TEST);
 
-    impl->mVShader = std::make_unique<QOpenGLShader>(QOpenGLShader::Vertex, this);
-    const char *vsrc = "attribute vec4 vertexIn; \
+    impl->mVShader =
+        std::make_unique<QOpenGLShader>(QOpenGLShader::Vertex, this);
+    const char *vsrc =
+        "attribute vec4 vertexIn; \
         attribute vec2 textureIn; \
         varying vec2 textureOut;  \
         void main(void)           \
@@ -65,10 +61,11 @@ void NV12Widget::initializeGL() {
 
     bool bCompile = impl->mVShader->compileSourceCode(vsrc);
     if (!bCompile) {
-        // throw OpenGlException();
+        qDebug() << "Error connect vertex shader";
     }
 
-    impl->mFShader = std::make_unique<QOpenGLShader>(QOpenGLShader::Fragment, this);
+    impl->mFShader =
+        std::make_unique<QOpenGLShader>(QOpenGLShader::Fragment, this);
     const char *fsrc = R"(
     varying vec2 textureOut; \
     uniform sampler2D tex_y; \
@@ -88,14 +85,16 @@ void NV12Widget::initializeGL() {
 
     bCompile = impl->mFShader->compileSourceCode(fsrc);
     if (!bCompile) {
-        // throw OpenGlException();
+        qDebug() << "Error connect fragment shader";
     }
 
     impl->mShaderProgram = std::make_unique<QOpenGLShaderProgram>(this);
     impl->mShaderProgram->addShader(impl->mFShader.get());
     impl->mShaderProgram->addShader(impl->mVShader.get());
-    impl->mShaderProgram->bindAttributeLocation("vertexIn", PROGRAM_VERTEX_ATTRIBUTE);
-    impl->mShaderProgram->bindAttributeLocation("textureIn", PROGRAM_TEXCOORD_ATTRIBUTE);
+    impl->mShaderProgram->bindAttributeLocation("vertexIn",
+                                                PROGRAM_VERTEX_ATTRIBUTE);
+    impl->mShaderProgram->bindAttributeLocation("textureIn",
+                                                PROGRAM_TEXCOORD_ATTRIBUTE);
     impl->mShaderProgram->link();
     impl->mShaderProgram->bind();
 
@@ -103,34 +102,24 @@ void NV12Widget::initializeGL() {
     impl->textureUniformUV = impl->mShaderProgram->uniformLocation("tex_uv");
 
     static const GLfloat vertexVertices[] = {
-        -1.0f,
-        -1.0f,
-        1.0f,
-        -1.0f,
-        -1.0f,
-        1.0f,
-        1.0f,
-        1.0f,
+        -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f,
     };
 
     static const GLfloat textureVertices[] = {
-        0.0f,
-        1.0f,
-        1.0f,
-        1.0f,
-        0.0f,
-        0.0f,
-        1.0f,
-        0.0f,
+        0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
     };
 
-    glVertexAttribPointer(PROGRAM_VERTEX_ATTRIBUTE, 2, GL_FLOAT, 0, 0, vertexVertices);
-    glVertexAttribPointer(PROGRAM_TEXCOORD_ATTRIBUTE, 2, GL_FLOAT, 0, 0, textureVertices);
+    glVertexAttribPointer(PROGRAM_VERTEX_ATTRIBUTE, 2, GL_FLOAT, 0, 0,
+                          vertexVertices);
+    glVertexAttribPointer(PROGRAM_TEXCOORD_ATTRIBUTE, 2, GL_FLOAT, 0, 0,
+                          textureVertices);
     glEnableVertexAttribArray(PROGRAM_VERTEX_ATTRIBUTE);
     glEnableVertexAttribArray(PROGRAM_TEXCOORD_ATTRIBUTE);
 
-    impl->mTextureY = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
-    impl->mTextureUV = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    impl->mTextureY =
+        std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    impl->mTextureUV =
+        std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
     impl->mTextureY->create();
     impl->mTextureUV->create();
 
@@ -151,7 +140,8 @@ void NV12Widget::paintGL() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, impl->id_y);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW, impl->mVideoH, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW, impl->mVideoH,
+                 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -159,7 +149,9 @@ void NV12Widget::paintGL() {
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, impl->id_uv);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, impl->mVideoW / 2, impl->mVideoH / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, impl->mVideoW / 2,
+                 impl->mVideoH / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
+                 impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

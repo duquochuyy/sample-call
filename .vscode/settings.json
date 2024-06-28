@@ -54,6 +54,8 @@
         "vector": "cpp",
         "deque": "cpp",
         "queue": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "__tree": "cpp",
+        "map": "cpp"
     }
 }

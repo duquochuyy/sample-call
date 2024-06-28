@@ -8,8 +8,7 @@
 #include <memory>
 
 #include "./CallController/CallController.h"
-#include "./utils/NV12Widget.h"
-#include "./utils/Yuv420Widget.h"
+#include "./VideoRender/CustomWidget/YuvWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -33,8 +32,8 @@ class MainWindow : public QMainWindow {
 
    private:
     Ui::MainWindow *ui;
-    std::shared_ptr<Yuv420Widget> _partnerRenderWidget;
-    std::shared_ptr<NV12Widget> _localRenderWidget;
+    std::shared_ptr<YuvWidget> _partnerRenderWidget;
+    std::shared_ptr<YuvWidget> _localRenderWidget;
     std::unique_ptr<CallController> _callController;
     int applicationPort;
     int partnerPort;

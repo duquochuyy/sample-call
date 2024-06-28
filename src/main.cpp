@@ -1,7 +1,4 @@
 #include <QApplication>
-#include <QOpenGLContext>
-#include <QOpenGLWidget>
-#include <QSurfaceFormat>
 #include <fstream>
 #include <iostream>
 #include <memory>

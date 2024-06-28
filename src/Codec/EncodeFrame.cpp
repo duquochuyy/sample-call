@@ -26,7 +26,7 @@ EncodeFrame::EncodeFrame(int width, int height)
 
     encoder = x264_encoder_open(&param);
     if (!encoder) {
-        qDebug() << "Failed to open x264 encoder";
+        std::cerr << "Failed to open x264 encoder" << std::endl;
         return;
     }
     x264_picture_alloc(&pic, X264_CSP_I420, width, height);
@@ -59,7 +59,7 @@ void EncodeFrame::encodeYUV420ToH264(const ZVideoFrame &frame,
     int frameSize = x264_encoder_encode(encoder, &nal, &i_nal, &pic, &pic_out);
 
     if (frameSize < 0) {
-        qDebug() << "Error encode";
+        std::cerr << "Error encode" << std::endl;
         return;
     }
 

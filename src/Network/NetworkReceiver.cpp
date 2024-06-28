@@ -35,7 +35,7 @@ NetworkReceiver::NetworkReceiver(int port)
         perror("listen");
         exit(EXIT_FAILURE);
     }
-    qDebug() << "Start port: " << _port;
+    std::cerr << "Start port: " << _port << std::endl;
 }
 
 NetworkReceiver::~NetworkReceiver() {
@@ -62,7 +62,7 @@ void NetworkReceiver::handleRequestConnect() {
         perror("accept");
         return;
     }
-    qDebug() << "Connection accepted";
+    std::cerr << "Connection accepted" << std::endl;
 
     // connect back to partner
     int partnerPort;
@@ -93,14 +93,14 @@ void NetworkReceiver::receiveData() {
     uint64_t newestFrameTimestamp = 0;
     startTime = std::chrono::steady_clock::now();
     while (true) {
-        std::vector<char> buffer(PACKER_SIZE);
+        std::vector<char> buffer(PACKET_SIZE);
 
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
 
         packetCount++;
 
         if (bytesRead <= 0) {
-            qDebug() << "Connection closed or error occurred";
+            std::cerr << "Connection closed or error occurred" << std::endl;
             break;
         }
         if (bytesRead > 0) {
@@ -162,8 +162,8 @@ void NetworkReceiver::receiveData() {
             frameCount++;
             getInfo();
 
-            qDebug() << "receive frame" << timestamp << fullFrameSize
-                     << totalPackets;
+            std::cerr << "receive frame " << timestamp << " " << fullFrameSize
+                      << " " << totalPackets << std::endl;
             if (_callback) {
                 _callback->onReceiveDataFrame(fullFrameData, timestamp);
             }

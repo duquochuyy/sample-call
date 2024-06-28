@@ -1,10 +1,13 @@
 #ifndef ZVIDEOFRAME_H
 #define ZVIDEOFRAME_H
 
+#include <stdint.h>
+
 #include <cstdint>
 #include <vector>
 
-typedef unsigned char uchar;
+#include "./../Utils/Define.h"
+
 struct ZVideoFrame {
     std::vector<uchar> yuv420pData;
     int width;

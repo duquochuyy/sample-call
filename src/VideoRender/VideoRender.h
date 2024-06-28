@@ -1,13 +1,10 @@
 #ifndef VIDEORENDER_H
 #define VIDEORENDER_H
 
-#include <QDebug>
-#include <QImage>
-#include <QLabel>
-
 #include "./../Utils/Convert.h"
 #include "./../Utils/Define.h"
 #include "./../VideoCapture/VideoCapture.h"
+#include "./CustomWidget/YuvWidget.h"
 
 class VideoRender {
    public:
@@ -23,7 +20,7 @@ class VideoRender {
 
     void registerCallback(Callback *callback);
 
-    virtual void setVideoFrameLabel(QLabel *&label) = 0;
+    virtual void setVideoFrameLabel(std::shared_ptr<YuvWidget> &widget) = 0;
     virtual void render(const std::shared_ptr<void> &frame,
                         ImageFormat format) = 0;
 

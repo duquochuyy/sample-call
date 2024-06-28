@@ -3,12 +3,12 @@
 DecodeFrame::DecodeFrame(int width, int height) : frameCount(0) {
     codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!codec) {
-        qDebug() << "Codec not found";
+        std::cerr << "Codec not found" << std::endl;
         return;
     }
     codecContext = avcodec_alloc_context3(codec);
     if (!codecContext) {
-        qDebug() << "Failed to allocate codec context";
+        std::cerr << "Failed to allocate codec context" << std::endl;
         return;
     }
     codecContext->width = width;
@@ -16,21 +16,21 @@ DecodeFrame::DecodeFrame(int width, int height) : frameCount(0) {
     codecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (avcodec_open2(codecContext, codec, nullptr) < 0) {
-        qDebug() << "Failed to open codec";
+        std::cerr << "Failed to open codec" << std::endl;
         avcodec_free_context(&codecContext);
         return;
     }
 
     frame = av_frame_alloc();
     if (!frame) {
-        qDebug() << "Failed to allocate AVFrame";
+        std::cerr << "Failed to allocate AVFrame" << std::endl;
         avcodec_free_context(&codecContext);
         return;
     }
 
     packet = av_packet_alloc();
     if (!packet) {
-        qDebug() << "Could not allocate AVPacket";
+        std::cerr << "Could not allocate AVPacket" << std::endl;
         av_frame_free(&frame);
         avcodec_free_context(&codecContext);
         return;
@@ -49,7 +49,7 @@ void DecodeFrame::decodeH264ToYUV420(
     const std::vector<uchar> &encodedData, const uint64_t timestamp,
     std::shared_ptr<ZVideoFrame> &decodedFrame) {
     if (encodedData.empty()) {
-        qDebug() << "Encoded data is empty";
+        std::cerr << "Encoded data is empty" << std::endl;
         return;
     }
 
@@ -61,7 +61,8 @@ void DecodeFrame::decodeH264ToYUV420(
 
     int ret = avcodec_send_packet(codecContext, packet);
     if (ret < 0) {
-        qDebug() << "Error sending a packet for decoding: " << av_err2str(ret);
+        std::cerr << "Error sending a packet for decoding: " << av_err2str(ret)
+                  << std::endl;
         return;
     }
 
@@ -70,7 +71,7 @@ void DecodeFrame::decodeH264ToYUV420(
         av_packet_free(&packet);
         return;
     } else if (ret < 0) {
-        qDebug() << "Error during decoding: " << av_err2str(ret);
+        std::cerr << "Error during decoding: " << av_err2str(ret) << std::endl;
         av_packet_free(&packet);
         return;
     }

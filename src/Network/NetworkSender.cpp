@@ -21,19 +21,19 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port) {
     struct sockaddr_in serv_addr;
     // creata socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        qDebug() << "Socket creation error";
+        std::cerr << "Socket creation error" << std::endl;
         return false;
     }
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0) {
-        qDebug() << "Invalid address/ Address not supported";
+        std::cerr << "Invalid address/ Address not supported" << std::endl;
         return false;
     }
     // connect
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        qDebug() << "Connection Failed";
+        std::cerr << "Connection Failed" << std::endl;
         return false;
     }
     { send(sock, &localPort, sizeof(localPort), 0); }
@@ -76,8 +76,8 @@ void NetworkSender::sendData() {
                            (PACKET_SIZE - headerSize);
         int offset = 0;
 
-        // qDebug() << " send frame: " << currentEncodedFrame.timestamp <<
-        // currentEncodedFrame.frameSize << totalPackets;
+        // std::cerr << " send frame: " << currentEncodedFrame.timestamp << " "
+        // << currentEncodedFrame.frameSize << " " << totalPackets << std::endl;
 
         auto startPacketTime = std::chrono::steady_clock::now();
 

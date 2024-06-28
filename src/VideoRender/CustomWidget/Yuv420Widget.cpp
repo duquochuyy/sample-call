@@ -1,14 +1,9 @@
 #include "Yuv420Widget.h"
 
-#define PROGRAM_VERTEX_ATTRIBUTE 0
-#define PROGRAM_TEXCOORD_ATTRIBUTE 1
-
-#define ATTRIB_VERTEX 0
-#define ATTRIB_TEXTURE 1
+#include "./../../Utils/Define.h"
 
 struct Yuv420Widget::YuvWidgetImpl {
-    YuvWidgetImpl()
-        : mFrameSize(0) {}
+    YuvWidgetImpl() : mFrameSize(0) {}
 
     std::vector<unsigned char> mBufYuv;
     int mFrameSize;
@@ -27,18 +22,17 @@ struct Yuv420Widget::YuvWidgetImpl {
 };
 
 Yuv420Widget::Yuv420Widget(QWidget *parent)
-    : QOpenGLWidget(parent), impl(new YuvWidgetImpl) {
-}
+    : QOpenGLWidget(parent), impl(new YuvWidgetImpl) {}
 
-Yuv420Widget::~Yuv420Widget() {
-}
+Yuv420Widget::~Yuv420Widget() {}
 
-void Yuv420Widget::setFrameData(const std::vector<unsigned char> &data, int frameWidth, int frameHeight) {
+void Yuv420Widget::setFrameData(const std::vector<unsigned char> &data,
+                                int frameWidth, int frameHeight) {
     impl->mVideoW = frameWidth;
     impl->mVideoH = frameHeight;
 
     // Allocate memory if not allocated or if size has changed
-    int newSize = frameWidth * frameHeight * 3 / 2; // YUV420 format
+    int newSize = frameWidth * frameHeight * 3 / 2;  // YUV420 format
     if (impl->mBufYuv.size() != newSize) {
         impl->mBufYuv.resize(newSize);
     }
@@ -54,8 +48,10 @@ void Yuv420Widget::initializeGL() {
 
     glEnable(GL_DEPTH_TEST);
 
-    impl->mVShader = std::make_unique<QOpenGLShader>(QOpenGLShader::Vertex, this);
-    const char *vsrc = "attribute vec4 vertexIn; \
+    impl->mVShader =
+        std::make_unique<QOpenGLShader>(QOpenGLShader::Vertex, this);
+    const char *vsrc =
+        "attribute vec4 vertexIn; \
         attribute vec2 textureIn; \
         varying vec2 textureOut;  \
         void main(void)           \
@@ -66,11 +62,13 @@ void Yuv420Widget::initializeGL() {
 
     bool bCompile = impl->mVShader->compileSourceCode(vsrc);
     if (!bCompile) {
-        throw OpenGlException();
+        qDebug() << "Error connect vertex shader";
     }
 
-    impl->mFShader = std::make_unique<QOpenGLShader>(QOpenGLShader::Fragment, this);
-    const char *fsrc = "varying vec2 textureOut; \
+    impl->mFShader =
+        std::make_unique<QOpenGLShader>(QOpenGLShader::Fragment, this);
+    const char *fsrc =
+        "varying vec2 textureOut; \
     uniform sampler2D tex_y; \
     uniform sampler2D tex_u; \
     uniform sampler2D tex_v; \
@@ -89,7 +87,7 @@ void Yuv420Widget::initializeGL() {
 
     bCompile = impl->mFShader->compileSourceCode(fsrc);
     if (!bCompile) {
-        throw OpenGlException();
+        qDebug() << "Error connect fragment shader";
     }
 
     impl->mShaderProgram = std::make_unique<QOpenGLShaderProgram>(this);
@@ -97,8 +95,10 @@ void Yuv420Widget::initializeGL() {
     impl->mShaderProgram->addShader(impl->mFShader.get());
     // add vertex shader
     impl->mShaderProgram->addShader(impl->mVShader.get());
-    impl->mShaderProgram->bindAttributeLocation("vertexIn", PROGRAM_VERTEX_ATTRIBUTE);
-    impl->mShaderProgram->bindAttributeLocation("textureIn", PROGRAM_TEXCOORD_ATTRIBUTE);
+    impl->mShaderProgram->bindAttributeLocation("vertexIn",
+                                                PROGRAM_VERTEX_ATTRIBUTE);
+    impl->mShaderProgram->bindAttributeLocation("textureIn",
+                                                PROGRAM_TEXCOORD_ATTRIBUTE);
     impl->mShaderProgram->link();
     impl->mShaderProgram->bind();
 
@@ -107,35 +107,26 @@ void Yuv420Widget::initializeGL() {
     impl->textureUniformV = impl->mShaderProgram->uniformLocation("tex_v");
 
     static const GLfloat vertexVertices[] = {
-        -1.0f,
-        -1.0f,
-        1.0f,
-        -1.0f,
-        -1.0f,
-        1.0f,
-        1.0f,
-        1.0f,
+        -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f,
     };
 
     static const GLfloat textureVertices[] = {
-        0.0f,
-        1.0f,
-        1.0f,
-        1.0f,
-        0.0f,
-        0.0f,
-        1.0f,
-        0.0f,
+        0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
     };
 
-    glVertexAttribPointer(PROGRAM_VERTEX_ATTRIBUTE, 2, GL_FLOAT, 0, 0, vertexVertices);
-    glVertexAttribPointer(PROGRAM_TEXCOORD_ATTRIBUTE, 2, GL_FLOAT, 0, 0, textureVertices);
+    glVertexAttribPointer(PROGRAM_VERTEX_ATTRIBUTE, 2, GL_FLOAT, 0, 0,
+                          vertexVertices);
+    glVertexAttribPointer(PROGRAM_TEXCOORD_ATTRIBUTE, 2, GL_FLOAT, 0, 0,
+                          textureVertices);
     glEnableVertexAttribArray(PROGRAM_VERTEX_ATTRIBUTE);
     glEnableVertexAttribArray(PROGRAM_TEXCOORD_ATTRIBUTE);
 
-    impl->mTextureY = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
-    impl->mTextureU = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
-    impl->mTextureV = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    impl->mTextureY =
+        std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    impl->mTextureU =
+        std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
+    impl->mTextureV =
+        std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
     impl->mTextureY->create();
     impl->mTextureU->create();
     impl->mTextureV->create();
@@ -158,7 +149,8 @@ void Yuv420Widget::paintGL() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, impl->id_y);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW, impl->mVideoH, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW, impl->mVideoH,
+                 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -166,7 +158,9 @@ void Yuv420Widget::paintGL() {
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, impl->id_u);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW / 2, impl->mVideoH / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW / 2,
+                 impl->mVideoH / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,
+                 impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -174,7 +168,9 @@ void Yuv420Widget::paintGL() {
 
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, impl->id_v);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW / 2, impl->mVideoH / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH * 5 / 4);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, impl->mVideoW / 2,
+                 impl->mVideoH / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,
+                 impl->mBufYuv.data() + impl->mVideoW * impl->mVideoH * 5 / 4);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
