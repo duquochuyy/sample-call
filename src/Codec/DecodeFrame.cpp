@@ -21,6 +21,7 @@ DecodeFrame::DecodeFrame(int width, int height) : frameCount(0) {
         return;
     }
 
+    // buffer for decode data
     frame = av_frame_alloc();
     if (!frame) {
         std::cerr << "Failed to allocate AVFrame" << std::endl;
@@ -28,6 +29,7 @@ DecodeFrame::DecodeFrame(int width, int height) : frameCount(0) {
         return;
     }
 
+    // buffer for encode data
     packet = av_packet_alloc();
     if (!packet) {
         std::cerr << "Could not allocate AVPacket" << std::endl;

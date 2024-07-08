@@ -2,9 +2,11 @@
 
 EncodeFrame::EncodeFrame(int width, int height)
     : _width(width), _height(height), encoder(nullptr), frameCount(0) {
+    // setting preset and tune
     x264_param_default_preset(&param, "veryfast", "zerolatency");
     param.i_threads = X264_SYNC_LOOKAHEAD_AUTO;
-    // param.i_threads = 1;
+    // param.i_threads = 1; // can multiple frames
+    // frame property
     param.i_csp = X264_CSP_I420;
     param.i_width = width;
     param.i_height = height;
