@@ -28,7 +28,7 @@ class CallController : public VideoCapture::Callback,
                        public EncodeFrame::Callback,
                        public DecodeFrame::Callback {
    public:
-    CallController(int port = 8080);
+    CallController(int port = 8080, int codec = CODEC_H264);
     ~CallController();
     // for capture
     void onNewVideoFrameRawFormat(const ZRootFrame &frame) override;
@@ -78,6 +78,8 @@ class CallController : public VideoCapture::Callback,
     // is calling to partner
     std::atomic<bool> connectedPartner;
     int applicationPort;
+    int partnerPort;
+    int codec;
     // for render ui
     std::shared_ptr<ZValueInfo> _valueInfo;
     // for tracker time process
@@ -98,6 +100,7 @@ class CallController : public VideoCapture::Callback,
         decodeQueue;  // for decode partner
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
         convertPartnerQueue;  // for convert to render partner
+    std::shared_ptr<ZVideoFrame> decodedFrame;
 };
 
 #endif

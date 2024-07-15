@@ -5,11 +5,12 @@
 #include "ui_MainWindow.h"
 
 MainWindow::MainWindow(std::unique_ptr<CallController> callController,
-                       int applicationPort, QWidget *parent)
+                       int applicationPort, int codec, QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
       _callController(std::move(callController)),
       applicationPort(applicationPort),
+      codec(codec),
       infoTimer(new QTimer(this)) {
     ui->setupUi(this);
     ui->videoFrameLabelLocal->raise();

@@ -2,6 +2,7 @@
 
 NetworkReceiver::NetworkReceiver(int port)
     : _port(port),
+      isRecevingData(false),
       receiver_fd(-1),
       sender_sock(-1),
       totalBytesReceive(0),
@@ -47,7 +48,6 @@ NetworkReceiver::~NetworkReceiver() {
         close(sender_sock);
         sender_sock = -1;
     }
-    delete _callback;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback) {
@@ -71,6 +71,7 @@ void NetworkReceiver::handleRequestConnect() {
         std::thread(&NetworkReceiver::handleConnectBack, this, partnerPort);
     connectBackThread.detach();
 
+    isRecevingData = true;
     receiveThread = std::thread(&NetworkReceiver::receiveData, this);
     receiveThread.detach();
 }
@@ -92,7 +93,7 @@ void NetworkReceiver::handleRequestDisconnect() {
 void NetworkReceiver::receiveData() {
     uint64_t newestFrameTimestamp = 0;
     startTime = std::chrono::steady_clock::now();
-    while (true) {
+    while (isRecevingData) {
         std::vector<char> buffer(PACKET_SIZE);
 
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
@@ -180,13 +181,26 @@ void NetworkReceiver::receiveData() {
 }
 
 void NetworkReceiver::disconnect() {
-    if (sender_sock >= 0) {
-        close(sender_sock);
-        sender_sock = -1;
+    if (isRecevingData) {
+        isRecevingData = false;
+        if (receiveThread.joinable()) {
+            receiveThread.join();
+        }
+        if (connectBackThread.joinable()) {
+            connectBackThread.join();
+        }
+        if (listenThread.joinable()) {
+            listenThread.join();
+        }
+        if (sender_sock >= 0) {
+            close(sender_sock);
+            sender_sock = -1;
+        }
     }
 }
 
 void NetworkReceiver::startListening() {
+    isRecevingData = false;
     listenThread = std::thread([this]() { handleRequestConnect(); });
     listenThread.detach();
 }

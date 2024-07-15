@@ -1,6 +1,31 @@
 #include "./Convert.h"
 
-void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data,
+#include "iostream"
+
+Convert::Convert() {
+    srcFrame = av_frame_alloc();
+    dstFrame = av_frame_alloc();
+    swsCtx = nullptr;
+    if (!srcFrame || !dstFrame) {
+        std::cerr << "Could not allocate AVFrame." << std::endl;
+    }
+}
+
+Convert::~Convert() {
+    // Giải phóng bộ nhớ
+    if (swsCtx) {
+        sws_freeContext(swsCtx);
+    }
+    if (dstFrame) {
+        av_freep(&dstFrame->data[0]);
+        av_frame_free(&dstFrame);
+    }
+    if (srcFrame) {
+        av_frame_free(&srcFrame);
+    }
+}
+
+void Convert::convertNV12DatatToYUV420(const std::vector<uchar> &nv12Data,
                                        int width, int height,
                                        std::vector<uchar> &yuv420pData) {
     int frameSize = width * height;
@@ -28,7 +53,7 @@ void Convert::processNV12DatatToYUV420(const std::vector<uchar> &nv12Data,
 
 // không còn dùng đến
 // đã đưa xuống GPU render
-void Convert::processNV12DatatToRGB(const std::vector<uchar> &nv12Data,
+void Convert::convertNV12DatatToRGB(const std::vector<uchar> &nv12Data,
                                     int width, int height, QImage &image) {
     int frameSize = width * height;
     const uchar *yPlane = nv12Data.data();
@@ -103,4 +128,70 @@ void Convert::convertYUV420ToRGB(const std::vector<uchar> &yuv420Data,
             image.setPixel(x, y, GETRGB(R, G, B));
         }
     }
+}
+
+void Convert::resizeNV12DataCapture(const std::vector<uchar> &inputNv12Data,
+                                    int inputWidth, int inputHeight,
+                                    std::vector<uchar> &outputNv12Data,
+                                    int outputWidth, int outputHeight) {
+    if (inputWidth == outputWidth && inputHeight == outputHeight) {
+        outputNv12Data = std::move(inputNv12Data);
+        return;
+    }
+
+    if (!srcFrame || !dstFrame) {
+        std::cerr << "Could not allocate AVFrame." << std::endl;
+        if (srcFrame)
+            av_frame_free(&srcFrame);
+        if (dstFrame)
+            av_frame_free(&dstFrame);
+        return;
+    }
+
+    // Thiết lập khung hình nguồn (srcFrame)
+    srcFrame->width = inputWidth;
+    srcFrame->height = inputHeight;
+    srcFrame->format = AV_PIX_FMT_NV12;
+
+    int ret = av_image_fill_arrays(srcFrame->data, srcFrame->linesize,
+                                   inputNv12Data.data(), AV_PIX_FMT_NV12,
+                                   inputWidth, inputHeight, 1);
+    if (ret < 0) {
+        std::cerr << "Could not fill srcFrame arrays: " << ret << std::endl;
+        av_frame_free(&srcFrame);
+        av_frame_free(&dstFrame);
+        return;
+    }
+
+    // Thiết lập khung hình đích (dstFrame)
+    dstFrame->width = outputWidth;
+    dstFrame->height = outputHeight;
+    dstFrame->format = AV_PIX_FMT_NV12;
+
+    ret = av_image_alloc(dstFrame->data, dstFrame->linesize, outputWidth,
+                         outputHeight, AV_PIX_FMT_NV12, 1);
+    if (ret < 0) {
+        std::cerr << "Could not allocate destination image: " << ret
+                  << std::endl;
+        av_frame_free(&srcFrame);
+        av_frame_free(&dstFrame);
+        return;
+    }
+
+    // Tạo SwsContext cho việc chuyển đổi định dạng và thay đổi độ phân giải
+    swsCtx = sws_getContext(inputWidth, inputHeight, AV_PIX_FMT_NV12,
+                            outputWidth, outputHeight, AV_PIX_FMT_NV12,
+                            SWS_BILINEAR, nullptr, nullptr, nullptr);
+
+    // Chuyển đổi khung hình
+    sws_scale(swsCtx, srcFrame->data, srcFrame->linesize, 0, inputHeight,
+              dstFrame->data, dstFrame->linesize);
+
+    // Lưu khung hình đã chuyển đổi vào outputNv12Data
+    int outputSize =
+        av_image_get_buffer_size(AV_PIX_FMT_NV12, outputWidth, outputHeight, 1);
+    outputNv12Data.resize(outputSize);
+    av_image_copy_to_buffer(outputNv12Data.data(), outputNv12Data.size(),
+                            dstFrame->data, dstFrame->linesize, AV_PIX_FMT_NV12,
+                            outputWidth, outputHeight, 1);
 }

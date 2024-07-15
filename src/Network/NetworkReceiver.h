@@ -52,6 +52,7 @@ class NetworkReceiver {
     int sender_sock;
     std::unordered_map<uint64_t, std::map<int, std::vector<uchar>>>
         bufferFrames;
+    std::atomic<bool> isRecevingData;
 
     std::thread listenThread;
     std::thread receiveThread;

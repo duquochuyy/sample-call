@@ -8,10 +8,7 @@ NetworkSender::NetworkSender(int localPort)
       frameCount(0),
       packetCount(0) {}
 
-NetworkSender::~NetworkSender() {
-    disconnect();
-    delete _callback;
-}
+NetworkSender::~NetworkSender() { disconnect(); }
 
 void NetworkSender::registerCallback(Callback *callback) {
     _callback = callback;
@@ -43,6 +40,8 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port) {
 }
 
 void NetworkSender::addNewEncodedFrame(const ZEncodedFrame &encodedFrame) {
+    if (encodedFrame.encodedData.size() == 0)
+        return;
     const std::lock_guard<std::mutex> lock(encodedFrameMutex);
     currentEncodedFrame = encodedFrame;
     hasNewFrame = true;
@@ -53,6 +52,9 @@ void NetworkSender::disconnect() {
         std::string disconnectMessage = "disconnect";
         send(sock, disconnectMessage.c_str(), disconnectMessage.size(), 0);
         isSending = false;
+        if (sendThread.joinable()) {
+            sendThread.join();
+        }
         if (sock >= 0) {
             close(sock);
             sock = -1;
@@ -76,8 +78,9 @@ void NetworkSender::sendData() {
                            (PACKET_SIZE - headerSize);
         int offset = 0;
 
-        // std::cerr << " send frame: " << currentEncodedFrame.timestamp << " "
-        // << currentEncodedFrame.frameSize << " " << totalPackets << std::endl;
+        std::cerr << " send frame: " << currentEncodedFrame.timestamp << " "
+                  << currentEncodedFrame.frameSize << " " << totalPackets
+                  << std::endl;
 
         auto startPacketTime = std::chrono::steady_clock::now();
 
@@ -124,11 +127,7 @@ void NetworkSender::sendData() {
 
 void NetworkSender::startSending() {
     startTime = std::chrono::steady_clock::now();
-    sendThread = std::thread([this]() {
-        while (true) {
-            sendData();
-        }
-    });
+    sendThread = std::thread([this]() { sendData(); });
     sendThread.detach();
 }
 

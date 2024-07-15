@@ -9,12 +9,6 @@
 
 #include "./../Common/ZVideoFrame.h"
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/opt.h>
-}
-
 class DecodeFrame {
    public:
     class Callback {
@@ -23,27 +17,19 @@ class DecodeFrame {
     };
 
    public:
-    DecodeFrame(int width, int height);
-    ~DecodeFrame();
+    explicit DecodeFrame(int width = WIDTH, int height = HEIGHT) {}
+    virtual ~DecodeFrame() = default;
 
     void registerCallback(Callback *callback);
 
-    void decodeH264ToYUV420(const std::vector<uchar> &encodedData,
-                            const uint64_t timestamp,
-                            std::shared_ptr<ZVideoFrame> &decodedFrame);
+    virtual void decode(const std::vector<uchar> &encodedData,
+                        const uint64_t timestamp,
+                        std::shared_ptr<ZVideoFrame> &decodedFrame) = 0;
 
-   private:
-    void getInfo(int width, int height);
+    virtual void disconnect() = 0;
 
-   private:
+   protected:
     Callback *_callback;
-    const AVCodec *codec;
-    AVCodecContext *codecContext;
-    AVFrame *frame;
-    AVPacket *packet;
-
-    std::atomic<int> frameCount;
-    std::chrono::time_point<std::chrono::steady_clock> startTime;
 };
 
 #endif
