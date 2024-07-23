@@ -21,8 +21,7 @@ class MainWindow : public QMainWindow {
 
    public:
     MainWindow(std::unique_ptr<CallController> callController,
-               int applicationPort, int codec = CODEC_H264,
-               QWidget *parent = nullptr);
+               int applicationPort, QWidget *parent = nullptr);
     ~MainWindow();
 
    public slots:
@@ -30,6 +29,9 @@ class MainWindow : public QMainWindow {
     void onBtnStartCallClicked();
     void onBtnStopCallClicked();
     void renderInfo();
+
+   private:
+    void setUpOption();
 
    private:
     Ui::MainWindow *ui;

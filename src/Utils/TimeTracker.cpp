@@ -30,3 +30,9 @@ double TimeTracker::getAverageTime() {
     }
     return -1;
 }
+
+void TimeTracker::distanceTime(uint64_t from, uint64_t to) {
+    std::lock_guard<std::mutex> lock(mtx);
+    totalTime += std::chrono::duration<double, std::milli>(to - from).count();
+    callCount++;
+}

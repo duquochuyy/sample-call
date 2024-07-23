@@ -1,5 +1,7 @@
 #include "./Convert.h"
 
+#include "QImage"
+#include "fstream"
 #include "iostream"
 
 Convert::Convert() {

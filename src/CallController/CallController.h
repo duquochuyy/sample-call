@@ -28,7 +28,7 @@ class CallController : public VideoCapture::Callback,
                        public EncodeFrame::Callback,
                        public DecodeFrame::Callback {
    public:
-    CallController(int port = 8080, int codec = CODEC_H264);
+    CallController(int port = 8080);
     ~CallController();
     // for capture
     void onNewVideoFrameRawFormat(const ZRootFrame &frame) override;
@@ -40,7 +40,8 @@ class CallController : public VideoCapture::Callback,
     // for receive
     void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
                             uint64_t timestamp) override;
-    void onAcceptedConnection(std::string partnerIP, int partnerPort) override;
+    void onAcceptedConnection(std::string partnerIP, int partnerPort, int codec,
+                              int width, int height, int bitrate) override;
     void onRequestDisconnect() override;
 
     // for send
@@ -55,7 +56,9 @@ class CallController : public VideoCapture::Callback,
     void onShowInfoPartnerFps(int fps) override;  // partner fps
 
    public:
-    void startCall(std::string partnerIP, int partnerPort);
+    void startCall(std::string partnerIP, int partnerPort, int width = WIDTH,
+                   int codec = CODEC_H264, int height = HEIGHT,
+                   int bitrate = BITRATE);
     void stopCall();
     std::shared_ptr<ZValueInfo> getLabelRender() const;
 
@@ -80,6 +83,9 @@ class CallController : public VideoCapture::Callback,
     int applicationPort;
     int partnerPort;
     int codec;
+    int width;
+    int height;
+    int bitrate;
     // for render ui
     std::shared_ptr<ZValueInfo> _valueInfo;
     // for tracker time process
@@ -100,7 +106,6 @@ class CallController : public VideoCapture::Callback,
         decodeQueue;  // for decode partner
     ThreadSafeQueue<std::shared_ptr<ZVideoFrame>>
         convertPartnerQueue;  // for convert to render partner
-    std::shared_ptr<ZVideoFrame> decodedFrame;
 };
 
 #endif

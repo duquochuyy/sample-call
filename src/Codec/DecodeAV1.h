@@ -17,7 +17,7 @@ extern "C" {
 
 class DecodeAV1 : public DecodeFrame {
    public:
-    DecodeAV1(int width, int height);
+    DecodeAV1(int width = WIDTH, int height = HEIGHT);
     ~DecodeAV1();
     void decode(const std::vector<uchar> &encodedData, const uint64_t timestamp,
                 std::shared_ptr<ZVideoFrame> &decodedFrame) override;

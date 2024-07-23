@@ -11,6 +11,7 @@ class TimeTracker {
     void start();
     void stop();
     double getAverageTime();
+    void distanceTime(uint64_t from, uint64_t to);
 
    private:
     double totalTime;

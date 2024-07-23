@@ -8,11 +8,10 @@
 #include "./../VideoRender/PartnerVideoRender.h"
 #include "./../VideoRender/QtVideoRender.h"
 
-CallController::CallController(int port, int codec)
+CallController::CallController(int port)
     : applicationPort(port),
       _valueInfo(std::make_shared<ZValueInfo>()),
-      connectedPartner(false),
-      codec(codec) {
+      connectedPartner(false) {
     _vidCapture.reset(new QtVideoCapture());
     _vidCapture->registerCallback(this);
     _vidCapture->setSetting(CAPTURE_WIDTH, CAPTURE_HEIGHT);
@@ -28,18 +27,6 @@ CallController::CallController(int port, int codec)
 
     _networkSender.reset(new NetworkSender(port));
     _networkSender->registerCallback(this);
-
-    // if (codec == CODEC_AV1) {
-    //     qDebug() << "use av1";
-    //     _encodeFrame.reset(new EncodeAV1(WIDTH, HEIGHT));
-    //     _decodeFrame.reset(new DecodeAV1(WIDTH, HEIGHT));
-    // } else {
-    //     qDebug() << "use h264";
-    //     _encodeFrame.reset(new EncodeH264(WIDTH, HEIGHT));
-    //     _decodeFrame.reset(new DecodeH264(WIDTH, HEIGHT));
-    // }
-    // _encodeFrame->registerCallback(this);
-    // _decodeFrame->registerCallback(this);
 
     _convert.reset(new Convert());
 
@@ -102,14 +89,15 @@ void CallController::processConvertRawData() {
 
         processEncodeConvertTime.start();
 
-        // test resize frame
+        // resize
         std::vector<uchar> outputNv12Data;
-        int outputWidth = WIDTH;
-        int outputHeight = HEIGHT;
+        int outputWidth = this->width;
+        int outputHeight = this->height;
         _convert->resizeNV12DataCapture(
             framePtr.get()->nv12Data, framePtr.get()->width,
             framePtr.get()->height, outputNv12Data, outputWidth, outputHeight);
 
+        // convert nv12 to yuv420
         std::vector<uchar> yuv420pData;
         _convert->convertNV12DatatToYUV420(outputNv12Data, outputWidth,
                                            outputHeight, yuv420pData);
@@ -117,17 +105,6 @@ void CallController::processConvertRawData() {
         std::shared_ptr<ZVideoFrame> frame =
             std::make_shared<ZVideoFrame>(std::move(yuv420pData), outputWidth,
                                           outputHeight, framePtr->timestamp);
-
-        // convert nv12 -> yuv420 frame to encode
-        // std::vector<uchar> yuv420pData;
-        // _convert->convertNV12DatatToYUV420(framePtr.get()->nv12Data,
-        //                                    framePtr.get()->width,
-        //                                    framePtr.get()->height,
-        //                                    yuv420pData);
-
-        // std::shared_ptr<ZVideoFrame> frame = std::make_shared<ZVideoFrame>(
-        //     std::move(yuv420pData), framePtr->width, framePtr->height,
-        //     framePtr->timestamp);
 
         processEncodeConvertTime.stop();
         double encodeConvertTime = processEncodeConvertTime.getAverageTime();
@@ -151,7 +128,11 @@ void CallController::processEncodeSend() {
         // encode
         ZEncodedFrame encodedFrame;
         _encodeFrame->encode(*framePtr, encodedFrame);
-        processEncodeTime.stop();
+        if (codec == CODEC_AV1)
+            processEncodeTime.distanceTime(encodedFrame.timestamp,
+                                           framePtr->timestamp);
+        else
+            processEncodeTime.stop();
         double encodeTime = processEncodeTime.getAverageTime();
         if (encodeTime != -1) {
             _valueInfo->encodeTime = encodeTime;
@@ -222,10 +203,16 @@ void CallController::processConvertPartnerThread() {
 }
 
 void CallController::onAcceptedConnection(std::string partnerIP,
-                                          int partnerPort) {
-    qDebug() << "Connection accepted. Partner port: " << partnerPort;
+                                          int partnerPort, int codec, int width,
+                                          int height, int bitrate) {
+    qDebug() << "Connection accepted. Partner port: " << partnerPort
+             << "with option: " << codec << width << height << bitrate;
     if (!connectedPartner) {
-        startCall(partnerIP, partnerPort);
+        this->codec = codec;
+        this->width = width;
+        this->height = height;
+        this->bitrate = bitrate;
+        startCall(partnerIP, partnerPort, codec, width, height, bitrate);
     }
 }
 
@@ -241,35 +228,37 @@ void CallController::setVideoFrameLabelNV12(
     _localRender->setVideoFrameLabel(widget);
 }
 
-void CallController::startCall(std::string partnerIP, int partnerPort) {
+void CallController::startCall(std::string partnerIP, int partnerPort,
+                               int codec, int width, int height, int bitrate) {
+    this->codec = codec;
+    this->width = width;
+    this->height = height;
+    this->bitrate = bitrate;
+    qDebug() << width << height << bitrate;
+    stopCall();
     if (!connectedPartner) {
         qDebug() << "startCall to port" << partnerPort;
         qDebug() << "set up codec" << partnerPort;
 
         if (codec == CODEC_AV1) {
             qDebug() << "use av1";
-            _encodeFrame.reset(new EncodeAV1(WIDTH, HEIGHT, BITRATE));
-            _decodeFrame.reset(new DecodeAV1(WIDTH, HEIGHT));
+            _encodeFrame.reset(new EncodeAV1(width, height, bitrate));
+            _decodeFrame.reset(new DecodeAV1(width, height));
         } else {
             qDebug() << "use h264";
-            qDebug() << "reset encode";
-            _encodeFrame.reset(new EncodeH264(WIDTH, HEIGHT, BITRATE));
-            qDebug() << "reset decode";
-            _decodeFrame.reset(new DecodeH264(WIDTH, HEIGHT));
+            _encodeFrame.reset(new EncodeH264(width, height, bitrate));
+            _decodeFrame.reset(new DecodeH264(width, height));
         }
         qDebug() << "start register callback";
         _encodeFrame->registerCallback(this);
         _decodeFrame->registerCallback(this);
 
-        qDebug() << "create pool for decoded frame";
-        decodedFrame = std::make_shared<ZVideoFrame>();
-        decodedFrame->yuv420pData.resize(WIDTH * HEIGHT * 3 / 2);
-
         qDebug() << "start connect";
-
         bool connected = false;
         connected =
-            _networkSender->handleConnectPartner(partnerIP, partnerPort);
+            // true;
+            _networkSender->handleConnectPartner(partnerIP, partnerPort, codec,
+                                                 width, height, bitrate);
 
         if (!connected) {
             qDebug() << "Failed to connect to" << partnerPort;
@@ -285,17 +274,17 @@ void CallController::startCall(std::string partnerIP, int partnerPort) {
 }
 
 void CallController::stopCall() {
-    _networkSender->disconnect();
-    _networkReceiver->disconnect();
-    connectedPartner = false;
-    // _encodeFrame->disconnect();
-    // _decodeFrame->disconnect();
-    localQueue.clear();
-    convertRawDataQueue.clear();
-    encodeQueue.clear();
-    decodeQueue.clear();
-    convertPartnerQueue.clear();
-    _networkReceiver->startListening();
+    if (connectedPartner) {
+        _networkSender->disconnect();
+        _networkReceiver->disconnect();
+        connectedPartner = false;
+        localQueue.clear();
+        convertRawDataQueue.clear();
+        encodeQueue.clear();
+        decodeQueue.clear();
+        convertPartnerQueue.clear();
+        _networkReceiver->startListening();
+    }
 }
 
 std::shared_ptr<ZValueInfo> CallController::getLabelRender() const {

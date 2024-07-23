@@ -15,8 +15,8 @@ DecodeAV1::DecodeAV1(int width, int height) : frameCount(0), res(EB_ErrorNone) {
         return;
     }
 
-    svtCtx.decParams.max_picture_width = width;
-    svtCtx.decParams.max_picture_height = height;
+    // svtCtx.decParams.max_picture_width = width;
+    // svtCtx.decParams.max_picture_height = height;
     svtCtx.decParams.threads = 4;
     svtCtx.decParams.num_p_frames = 1;
 
@@ -62,7 +62,45 @@ DecodeAV1::DecodeAV1(int width, int height) : frameCount(0), res(EB_ErrorNone) {
     startTime = std::chrono::steady_clock::now();
 }
 
-DecodeAV1::~DecodeAV1() { disconnect(); }
+DecodeAV1::~DecodeAV1() {
+    if (svtCtx.svtHandle) {
+        qDebug() << "start deinit decoder";
+        EbErrorType res = svt_av1_dec_deinit(svtCtx.svtHandle);
+        if (res != EB_ErrorNone) {
+            std::cerr << "Failed to deinitialize SVT-AV1 decoder, error code: "
+                      << res << std::endl;
+        }
+        qDebug() << "end deinit decoder";
+
+        res = svt_av1_dec_deinit_handle(svtCtx.svtHandle);
+        if (res != EB_ErrorNone) {
+            std::cerr
+                << "Failed to deinitialize SVT-AV1 decoder handle, error code: "
+                << res << std::endl;
+        }
+
+        svtCtx.svtHandle = nullptr;
+    }
+    if (svtCtx.outputStreamBuffer) {
+        if (svtCtx.outputStreamBuffer->p_buffer) {
+            free(svtCtx.outputStreamBuffer->p_buffer);
+            svtCtx.outputStreamBuffer->p_buffer = nullptr;
+        }
+
+        delete svtCtx.outputStreamBuffer;
+        svtCtx.outputStreamBuffer = nullptr;
+    }
+
+    if (streamInfo) {
+        free(streamInfo);
+        streamInfo = nullptr;
+    }
+
+    if (frameInfo) {
+        free(frameInfo);
+        frameInfo = nullptr;
+    }
+}
 
 void DecodeAV1::decode(const std::vector<uchar> &encodedData,
                        const uint64_t timestamp,
@@ -124,57 +162,4 @@ void DecodeAV1::getInfo(int width, int height) {
     }
 }
 
-void DecodeAV1::disconnect() {
-    if (svtCtx.svtHandle) {
-        res = svt_av1_dec_deinit(svtCtx.svtHandle);
-        if (res != EB_ErrorNone) {
-            std::cerr << "Failed to deinitialize SVT-AV1 decoder, error code: "
-                      << res << std::endl;
-        }
-
-        res = svt_av1_dec_deinit_handle(svtCtx.svtHandle);
-        if (res != EB_ErrorNone) {
-            std::cerr
-                << "Failed to deinitialize SVT-AV1 decoder handle, error code: "
-                << res << std::endl;
-        }
-
-        svtCtx.svtHandle = nullptr;
-    }
-
-    if (svtCtx.outputStreamBuffer) {
-        if (svtCtx.outputStreamBuffer->p_buffer) {
-            EbSvtIOFormat *ioFormat = reinterpret_cast<EbSvtIOFormat *>(
-                svtCtx.outputStreamBuffer->p_buffer);
-
-            if (ioFormat->luma) {
-                free(ioFormat->luma);
-                ioFormat->luma = nullptr;
-            }
-            if (ioFormat->cb) {
-                free(ioFormat->cb);
-                ioFormat->cb = nullptr;
-            }
-            if (ioFormat->cr) {
-                free(ioFormat->cr);
-                ioFormat->cr = nullptr;
-            }
-
-            free(svtCtx.outputStreamBuffer->p_buffer);
-            svtCtx.outputStreamBuffer->p_buffer = nullptr;
-        }
-
-        delete svtCtx.outputStreamBuffer;
-        svtCtx.outputStreamBuffer = nullptr;
-    }
-
-    if (streamInfo) {
-        free(streamInfo);
-        streamInfo = nullptr;
-    }
-
-    if (frameInfo) {
-        free(frameInfo);
-        frameInfo = nullptr;
-    }
-}
+void DecodeAV1::disconnect() {}

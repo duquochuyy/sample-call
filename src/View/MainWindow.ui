@@ -549,6 +549,23 @@
       </property>
      </widget>
     </item>
+    <item row="3" column="2">
+     <widget class="QComboBox" name="comboBoxBitrate">
+      <property name="placeholderText">
+       <string extracomment="Bitrate"/>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="2">
+     <widget class="QComboBox" name="comboBoxSize">
+      <property name="placeholderText">
+       <string extracomment="Size"/>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QComboBox" name="comboBoxCodec"/>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">

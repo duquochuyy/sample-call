@@ -23,7 +23,8 @@ class NetworkReceiver {
     class Callback {
        public:
         virtual void onAcceptedConnection(std::string partnerIP,
-                                          int partnerPort) = 0;
+                                          int partnerPort, int codec, int width,
+                                          int height, int bitrate) = 0;
         virtual void onReceiveDataFrame(const std::vector<uchar> &fullFrameData,
                                         uint64_t timestamp) = 0;
         virtual void onRequestDisconnect() = 0;
@@ -40,7 +41,8 @@ class NetworkReceiver {
    private:
     void handleRequestConnect();
     void receiveData();
-    void handleConnectBack(int partnerPort);
+    void handleConnectBack(int partnerPort, int codec, int width, int height,
+                           int bitrate);
     void handleRequestDisconnect();
     void getInfo();
 

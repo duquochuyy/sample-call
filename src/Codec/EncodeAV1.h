@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include "./../Common/ZEncodedFrame.h"
 #include "./../Utils/Define.h"
@@ -41,11 +42,17 @@ class EncodeAV1 : public EncodeFrame {
 
    private:
     void getInfo(int width, int height);
+    void getPacket();
 
    private:
     SvtAv1Context svtCtx;
     EbErrorType res;
     EbSvtIOFormat *frameBuffer;
+
+    std::atomic<bool> hasNewPacket;
+    std::atomic<bool> isEncoding;
+    std::thread getPacketThread;
+    EbBufferHeaderType *outputPacket;
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;

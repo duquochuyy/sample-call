@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -31,8 +30,6 @@ class EncodeH264 : public EncodeFrame {
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
-
-    std::ofstream output;
 };
 
 #endif

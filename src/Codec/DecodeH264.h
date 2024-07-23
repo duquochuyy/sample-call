@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include <fstream>
-
 #include "./DecodeFrame.h"
 
 #ifdef __cplusplus
@@ -21,7 +19,7 @@ extern "C" {
 
 class DecodeH264 : public DecodeFrame {
    public:
-    DecodeH264(int width, int height);
+    DecodeH264(int width = WIDTH, int height = HEIGHT);
     ~DecodeH264();
 
     void decode(const std::vector<uchar> &encodedData, const uint64_t timestamp,
@@ -40,7 +38,6 @@ class DecodeH264 : public DecodeFrame {
 
     std::atomic<int> frameCount;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
-    std::ofstream output;
 };
 
 #endif

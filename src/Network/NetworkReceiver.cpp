@@ -37,6 +37,8 @@ NetworkReceiver::NetworkReceiver(int port)
         exit(EXIT_FAILURE);
     }
     std::cerr << "Start port: " << _port << std::endl;
+
+    bufferFrames.clear();
 }
 
 NetworkReceiver::~NetworkReceiver() {
@@ -65,10 +67,19 @@ void NetworkReceiver::handleRequestConnect() {
     std::cerr << "Connection accepted" << std::endl;
 
     // connect back to partner
-    int partnerPort;
-    recv(sender_sock, &partnerPort, sizeof(partnerPort), 0);
-    connectBackThread =
-        std::thread(&NetworkReceiver::handleConnectBack, this, partnerPort);
+    int partnerPort, codec, width, height, bitrate;
+    {
+        int firstPacketSize = sizeof(int) * 5;
+        std::vector<char> firstPacket(firstPacketSize);
+        recv(sender_sock, firstPacket.data(), sizeof(firstPacket), 0);
+        memcpy(&partnerPort, firstPacket.data(), sizeof(int));
+        memcpy(&codec, firstPacket.data() + sizeof(int), sizeof(int));
+        memcpy(&width, firstPacket.data() + sizeof(int) * 2, sizeof(int));
+        memcpy(&height, firstPacket.data() + sizeof(int) * 3, sizeof(int));
+        memcpy(&bitrate, firstPacket.data() + sizeof(int) * 4, sizeof(int));
+    }
+    connectBackThread = std::thread(&NetworkReceiver::handleConnectBack, this,
+                                    partnerPort, codec, width, height, bitrate);
     connectBackThread.detach();
 
     isRecevingData = true;
@@ -76,11 +87,13 @@ void NetworkReceiver::handleRequestConnect() {
     receiveThread.detach();
 }
 
-void NetworkReceiver::handleConnectBack(int partnerPort) {
+void NetworkReceiver::handleConnectBack(int partnerPort, int codec, int width,
+                                        int height, int bitrate) {
     {
         std::lock_guard<std::mutex> lock(callbackMutex);
         if (_callback) {
-            _callback->onAcceptedConnection("127.0.0.1", partnerPort);
+            _callback->onAcceptedConnection("127.0.0.1", partnerPort, codec,
+                                            width, height, bitrate);
         }
     }
 }
@@ -112,8 +125,6 @@ void NetworkReceiver::receiveData() {
             }
         }
 
-        totalBytesReceive += bytesRead;
-
         uint64_t timestamp;
         int totalPackets, packetId, width, height, chunkSize;
         int headerSize = sizeof(uint64_t) + 5 * sizeof(int);
@@ -143,6 +154,8 @@ void NetworkReceiver::receiveData() {
             buffer.begin() + headerSize + chunkSize);
 
         bufferFrames[timestamp][packetId] = frameDataChunk;
+
+        totalBytesReceive += headerSize + chunkSize;
 
         if (bufferFrames[timestamp].size() == totalPackets) {
             int fullFrameSize = 0;
@@ -197,6 +210,7 @@ void NetworkReceiver::disconnect() {
             sender_sock = -1;
         }
     }
+    bufferFrames.clear();
 }
 
 void NetworkReceiver::startListening() {

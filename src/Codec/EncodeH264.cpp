@@ -40,14 +40,7 @@ EncodeH264::EncodeH264(int width, int height, int bitrate)
     }
 }
 
-EncodeH264::~EncodeH264() {
-    disconnect();
-    // if (encoder) {
-    //     x264_encoder_close(encoder);
-    //     encoder = nullptr;
-    // }
-    // x264_picture_clean(&pic);
-}
+EncodeH264::~EncodeH264() { disconnect(); }
 
 void EncodeH264::encode(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame) {
     x264_picture_init(&pic);
@@ -80,6 +73,7 @@ void EncodeH264::encode(const ZVideoFrame &frame, ZEncodedFrame &encodedFrame) {
                                         nal[i].p_payload,
                                         nal[i].p_payload + nal[i].i_payload);
     }
+
     getInfo(frame.width, frame.height);
 }
 
@@ -97,4 +91,10 @@ void EncodeH264::getInfo(int width, int height) {
     }
 }
 
-void EncodeH264::disconnect() {}
+void EncodeH264::disconnect() {
+    // if (encoder) {
+    //     x264_encoder_close(encoder);
+    //     encoder = nullptr;
+    // }
+    // x264_picture_clean(&pic);
+}
