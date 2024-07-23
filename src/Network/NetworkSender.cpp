@@ -4,20 +4,20 @@ NetworkSender::NetworkSender(int localPort)
     : localPort(localPort),
       sock(-1),
       isSending(false),
+      hasNewFrame(false),
       totalBytesSent(0),
       frameCount(0),
-      packetCount(0) {}
+      packetCount(0),
+      currentEncodedFrame(ZEncodedFrame()) {}
 
-NetworkSender::~NetworkSender() {
-    disconnect();
-    delete _callback;
-}
+NetworkSender::~NetworkSender() { disconnect(); }
 
 void NetworkSender::registerCallback(Callback *callback) {
     _callback = callback;
 }
 
-bool NetworkSender::handleConnectPartner(std::string ip, int port) {
+bool NetworkSender::handleConnectPartner(std::string ip, int port, int codec,
+                                         int width, int height, int bitrate) {
     struct sockaddr_in serv_addr;
     // creata socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -36,13 +36,25 @@ bool NetworkSender::handleConnectPartner(std::string ip, int port) {
         std::cerr << "Connection Failed" << std::endl;
         return false;
     }
-    { send(sock, &localPort, sizeof(localPort), 0); }
+    {
+        int firstPacketSize = sizeof(int) * 5;
+        std::vector<char> firstPacket(firstPacketSize);
+        memcpy(firstPacket.data(), &localPort, sizeof(int));
+        memcpy(firstPacket.data() + sizeof(int), &codec, sizeof(int));
+        memcpy(firstPacket.data() + sizeof(int) * 2, &width, sizeof(int));
+        memcpy(firstPacket.data() + sizeof(int) * 3, &height, sizeof(int));
+        memcpy(firstPacket.data() + sizeof(int) * 4, &bitrate, sizeof(int));
+        send(sock, firstPacket.data(), firstPacket.size(), 0);
+    }
     isSending = true;
+    hasNewFrame = false;
     startSending();
     return true;
 }
 
 void NetworkSender::addNewEncodedFrame(const ZEncodedFrame &encodedFrame) {
+    if (encodedFrame.encodedData.size() == 0)
+        return;
     const std::lock_guard<std::mutex> lock(encodedFrameMutex);
     currentEncodedFrame = encodedFrame;
     hasNewFrame = true;
@@ -50,14 +62,19 @@ void NetworkSender::addNewEncodedFrame(const ZEncodedFrame &encodedFrame) {
 
 void NetworkSender::disconnect() {
     if (isSending) {
+        isSending = false;
         std::string disconnectMessage = "disconnect";
         send(sock, disconnectMessage.c_str(), disconnectMessage.size(), 0);
-        isSending = false;
+        if (sendThread.joinable()) {
+            sendThread.join();
+        }
         if (sock >= 0) {
             close(sock);
             sock = -1;
         }
     }
+    hasNewFrame = false;
+    currentEncodedFrame = ZEncodedFrame();
 }
 
 void NetworkSender::sendData() {
@@ -76,8 +93,9 @@ void NetworkSender::sendData() {
                            (PACKET_SIZE - headerSize);
         int offset = 0;
 
-        // std::cerr << " send frame: " << currentEncodedFrame.timestamp << " "
-        // << currentEncodedFrame.frameSize << " " << totalPackets << std::endl;
+        std::cerr << " send frame: " << currentEncodedFrame.timestamp << " "
+                  << currentEncodedFrame.frameSize << " " << totalPackets
+                  << std::endl;
 
         auto startPacketTime = std::chrono::steady_clock::now();
 
@@ -109,12 +127,13 @@ void NetworkSender::sendData() {
                         chunkSize);
 
             offset += chunkSize;
-
+            if (!isSending)
+                break;
             send(sock, packet.data(), packet.size(), 0);
 
             packetCount++;
 
-            totalBytesSent += packet.size();
+            totalBytesSent += headerSize + chunkSize;
         }
 
         getInfo();
@@ -124,11 +143,7 @@ void NetworkSender::sendData() {
 
 void NetworkSender::startSending() {
     startTime = std::chrono::steady_clock::now();
-    sendThread = std::thread([this]() {
-        while (true) {
-            sendData();
-        }
-    });
+    sendThread = std::thread([this]() { sendData(); });
     sendThread.detach();
 }
 

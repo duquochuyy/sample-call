@@ -19,9 +19,13 @@ void PartnerVideoRender::render(const std::shared_ptr<void> &frame,
                                 ImageFormat format) {
     if (format == ImageFormat::YUV420) {
         auto framePtr = std::static_pointer_cast<ZVideoFrame>(frame);
-        _partnerRenderWidget->setFrameData(framePtr.get()->yuv420pData,
-                                           framePtr->width, framePtr->height);
-        getInfo(framePtr->width, framePtr->height);
+        if (framePtr->yuv420pData.size() != 0) {
+            // qDebug() << "render frame" << framePtr.get()->timestamp
+            //          << framePtr.get()->width << framePtr.get()->height;
+            _partnerRenderWidget->setFrameData(
+                framePtr.get()->yuv420pData, framePtr->width, framePtr->height);
+            getInfo(framePtr->width, framePtr->height);
+        }
     } else {
         qDebug() << "Unsupported image format";
         return;

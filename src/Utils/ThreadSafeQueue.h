@@ -23,6 +23,8 @@ class ThreadSafeQueue {
 
     int size() const;
 
+    void clear();
+
    private:
     mutable std::mutex mutex_;  // cho phép thay đổi trong luồng có const
     std::queue<T> queue_;

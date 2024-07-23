@@ -2,6 +2,7 @@
 
 NetworkReceiver::NetworkReceiver(int port)
     : _port(port),
+      isRecevingData(false),
       receiver_fd(-1),
       sender_sock(-1),
       totalBytesReceive(0),
@@ -36,6 +37,8 @@ NetworkReceiver::NetworkReceiver(int port)
         exit(EXIT_FAILURE);
     }
     std::cerr << "Start port: " << _port << std::endl;
+
+    bufferFrames.clear();
 }
 
 NetworkReceiver::~NetworkReceiver() {
@@ -47,7 +50,6 @@ NetworkReceiver::~NetworkReceiver() {
         close(sender_sock);
         sender_sock = -1;
     }
-    delete _callback;
 }
 
 void NetworkReceiver::registerCallback(Callback *callback) {
@@ -65,21 +67,33 @@ void NetworkReceiver::handleRequestConnect() {
     std::cerr << "Connection accepted" << std::endl;
 
     // connect back to partner
-    int partnerPort;
-    recv(sender_sock, &partnerPort, sizeof(partnerPort), 0);
-    connectBackThread =
-        std::thread(&NetworkReceiver::handleConnectBack, this, partnerPort);
+    int partnerPort, codec, width, height, bitrate;
+    {
+        int firstPacketSize = sizeof(int) * 5;
+        std::vector<char> firstPacket(firstPacketSize);
+        recv(sender_sock, firstPacket.data(), sizeof(firstPacket), 0);
+        memcpy(&partnerPort, firstPacket.data(), sizeof(int));
+        memcpy(&codec, firstPacket.data() + sizeof(int), sizeof(int));
+        memcpy(&width, firstPacket.data() + sizeof(int) * 2, sizeof(int));
+        memcpy(&height, firstPacket.data() + sizeof(int) * 3, sizeof(int));
+        memcpy(&bitrate, firstPacket.data() + sizeof(int) * 4, sizeof(int));
+    }
+    connectBackThread = std::thread(&NetworkReceiver::handleConnectBack, this,
+                                    partnerPort, codec, width, height, bitrate);
     connectBackThread.detach();
 
+    isRecevingData = true;
     receiveThread = std::thread(&NetworkReceiver::receiveData, this);
     receiveThread.detach();
 }
 
-void NetworkReceiver::handleConnectBack(int partnerPort) {
+void NetworkReceiver::handleConnectBack(int partnerPort, int codec, int width,
+                                        int height, int bitrate) {
     {
         std::lock_guard<std::mutex> lock(callbackMutex);
         if (_callback) {
-            _callback->onAcceptedConnection("127.0.0.1", partnerPort);
+            _callback->onAcceptedConnection("127.0.0.1", partnerPort, codec,
+                                            width, height, bitrate);
         }
     }
 }
@@ -92,7 +106,7 @@ void NetworkReceiver::handleRequestDisconnect() {
 void NetworkReceiver::receiveData() {
     uint64_t newestFrameTimestamp = 0;
     startTime = std::chrono::steady_clock::now();
-    while (true) {
+    while (isRecevingData) {
         std::vector<char> buffer(PACKET_SIZE);
 
         int bytesRead = recv(sender_sock, buffer.data(), buffer.size(), 0);
@@ -110,8 +124,6 @@ void NetworkReceiver::receiveData() {
                 return;
             }
         }
-
-        totalBytesReceive += bytesRead;
 
         uint64_t timestamp;
         int totalPackets, packetId, width, height, chunkSize;
@@ -142,6 +154,8 @@ void NetworkReceiver::receiveData() {
             buffer.begin() + headerSize + chunkSize);
 
         bufferFrames[timestamp][packetId] = frameDataChunk;
+
+        totalBytesReceive += headerSize + chunkSize;
 
         if (bufferFrames[timestamp].size() == totalPackets) {
             int fullFrameSize = 0;
@@ -180,13 +194,27 @@ void NetworkReceiver::receiveData() {
 }
 
 void NetworkReceiver::disconnect() {
-    if (sender_sock >= 0) {
-        close(sender_sock);
-        sender_sock = -1;
+    if (isRecevingData) {
+        isRecevingData = false;
+        if (receiveThread.joinable()) {
+            receiveThread.join();
+        }
+        if (connectBackThread.joinable()) {
+            connectBackThread.join();
+        }
+        if (listenThread.joinable()) {
+            listenThread.join();
+        }
+        if (sender_sock >= 0) {
+            close(sender_sock);
+            sender_sock = -1;
+        }
     }
+    bufferFrames.clear();
 }
 
 void NetworkReceiver::startListening() {
+    isRecevingData = false;
     listenThread = std::thread([this]() { handleRequestConnect(); });
     listenThread.detach();
 }

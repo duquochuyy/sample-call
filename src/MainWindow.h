@@ -31,12 +31,16 @@ class MainWindow : public QMainWindow {
     void renderInfo();
 
    private:
+    void setUpOption();
+
+   private:
     Ui::MainWindow *ui;
     std::shared_ptr<YuvWidget> _partnerRenderWidget;
     std::shared_ptr<YuvWidget> _localRenderWidget;
     std::unique_ptr<CallController> _callController;
     int applicationPort;
     int partnerPort;
+    int codec;
     QTimer *infoTimer;
 };
 #endif  // MAINWINDOW_H

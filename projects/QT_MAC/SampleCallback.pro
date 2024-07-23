@@ -4,6 +4,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++14
 
+QMAKE_MACOSX_DEPLOYMENT_TARGET = 14.0
+
 QMAKE_CXXFLAGS += -arch arm64
 QMAKE_LFLAGS += -arch arm64
 
@@ -15,14 +17,25 @@ ROOT_DIR = $$PWD/../..
 
 INCLUDEPATH += \
     $$ROOT_DIR/libs/x264 \
-    /opt/homebrew/opt/ffmpeg/include
+    /opt/homebrew/opt/ffmpeg/include \
+    $$ROOT_DIR/libs/svtav1 
 
 LIBS += \
     -L$$ROOT_DIR/libs/x264 -lx264 \
-    -L/opt/homebrew/opt/ffmpeg/lib -lavcodec -lavformat -lavutil -lswscale
+    -L/opt/homebrew/opt/ffmpeg/lib -lavcodec -lavformat -lavutil -lswscale \
+    -L$$ROOT_DIR/libs/svtav1 -lSvtAv1Enc -lSvtAv1Dec
+
 
 HEADERS += \
-    $$ROOT_DIR/libs/x264/x264.h
+    $$ROOT_DIR/libs/x264/x264.h \
+    $$ROOT_DIR/libs/svtav1/EbDebugMacros.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1Dec.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1Enc.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1ErrorCodes.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1ExtFrameBuf.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1Formats.h \
+    $$ROOT_DIR/libs/svtav1/EbSvtAv1Metadata.h
 
 SOURCES += \
     $$ROOT_DIR/src/main.cpp \
@@ -36,14 +49,18 @@ SOURCES += \
     $$ROOT_DIR/src/Network/NetworkReceiver.cpp \
     $$ROOT_DIR/src/Network/NetworkSender.cpp \
     $$ROOT_DIR/src/Codec/EncodeFrame.cpp \
+    $$ROOT_DIR/src/Codec/EncodeH264.cpp \
+    $$ROOT_DIR/src/Codec/EncodeAV1.cpp \
     $$ROOT_DIR/src/Codec/DecodeFrame.cpp \
+    $$ROOT_DIR/src/Codec/DecodeH264.cpp \
+    $$ROOT_DIR/src/Codec/DecodeAV1.cpp \
     $$ROOT_DIR/src/Utils/Utils.cpp \
     $$ROOT_DIR/src/Utils/TimeTracker.cpp \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.cpp \
     $$ROOT_DIR/src/Utils/Convert.cpp \
     $$ROOT_DIR/src/VideoRender/CustomWidget/Yuv420Widget.cpp \
     $$ROOT_DIR/src/VideoRender/CustomWidget/NV12Widget.cpp \
-    $$ROOT_DIR/src/MainWindow.cpp
+    $$ROOT_DIR/src/MainWindow.cpp 
 
 HEADERS += \
     $$ROOT_DIR/src/CallController/CallController.h \
@@ -56,7 +73,11 @@ HEADERS += \
     $$ROOT_DIR/src/Network/NetworkReceiver.h \
     $$ROOT_DIR/src/Network/NetworkSender.h \
     $$ROOT_DIR/src/Codec/EncodeFrame.h \
+    $$ROOT_DIR/src/Codec/EncodeH264.h \
+    $$ROOT_DIR/src/Codec/EncodeAV1.h \
     $$ROOT_DIR/src/Codec/DecodeFrame.h \
+    $$ROOT_DIR/src/Codec/DecodeH264.h \
+    $$ROOT_DIR/src/Codec/DecodeAV1.h \
     $$ROOT_DIR/src/Utils/Utils.h \
     $$ROOT_DIR/src/Utils/TimeTracker.h \
     $$ROOT_DIR/src/Utils/ThreadSafeQueue.h \
@@ -64,7 +85,7 @@ HEADERS += \
     $$ROOT_DIR/src/VideoRender/CustomWidget/YuvWidget.h \
     $$ROOT_DIR/src/VideoRender/CustomWidget/Yuv420Widget.h \
     $$ROOT_DIR/src/VideoRender/PartnerVideoRender.h \
-    $$ROOT_DIR/src/MainWindow.h
+    $$ROOT_DIR/src/MainWindow.h 
 
 FORMS += \
     $$ROOT_DIR/src/View/MainWindow.ui

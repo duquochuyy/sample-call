@@ -5,9 +5,12 @@
 typedef unsigned char uchar;
 
 // for frame
-#define WIDTH 1280
-#define HEIGHT 720
+#define CAPTURE_WIDTH 1280
+#define CAPTURE_HEIGHT 720
+#define WIDTH 640
+#define HEIGHT 480
 #define FPS 30
+#define BITRATE 1500000  // đơn vị bit
 
 // for encode
 #define TIMEBASE 90000
@@ -23,5 +26,9 @@ enum class ImageFormat { YUV420, NV12, RGB };
 
 // for packet send and receive
 #define PACKET_SIZE 1024
+
+// codecs
+#define CODEC_H264 0
+#define CODEC_AV1 1
 
 #endif

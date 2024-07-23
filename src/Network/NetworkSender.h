@@ -30,7 +30,8 @@ class NetworkSender {
     NetworkSender(const int localPort);
     ~NetworkSender();
     void registerCallback(Callback *callback);
-    bool handleConnectPartner(std::string ip, int port);
+    bool handleConnectPartner(std::string ip, int port, int codec, int width,
+                              int height, int bitrate);
     void addNewEncodedFrame(const ZEncodedFrame &encodedFrame);
     void disconnect();
 
@@ -44,8 +45,8 @@ class NetworkSender {
 
     int localPort;
     int sock;
-    bool isSending;
-    bool hasNewFrame = false;
+    std::atomic<bool> isSending;
+    std::atomic<bool> hasNewFrame;
     ZEncodedFrame currentEncodedFrame;
 
     std::thread sendThread;

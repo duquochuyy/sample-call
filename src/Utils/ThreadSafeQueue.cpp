@@ -50,3 +50,10 @@ int ThreadSafeQueue<T>::size() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.size();
 }
+
+template <typename T>
+void ThreadSafeQueue<T>::clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::queue<T> emptyQueue;
+    std::swap(queue_, emptyQueue);
+}

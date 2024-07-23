@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "./CallController/CallController.h"
+#include "./Utils/Define.h"
 #include "MainWindow.h"
 
 extern "C" {
@@ -20,6 +21,7 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         port = std::stoi(argv[1]);
     }
+
     avformat_network_init();
     qDebug() << "FFmpeg version: " << av_version_info();
 
